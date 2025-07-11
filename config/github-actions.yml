@@ -1,0 +1,291 @@
+name: Paper2Data CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Test Python Parser Package
+  test-python:
+    name: Test Python Parser
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('packages/parser/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install Python dependencies
+      working-directory: packages/parser
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    
+    - name: Run Python linting
+      working-directory: packages/parser
+      run: |
+        flake8 src/ tests/
+        black --check src/ tests/
+        mypy src/
+    
+    - name: Run Python tests
+      working-directory: packages/parser
+      run: |
+        pytest -v --cov=src --cov-report=xml --cov-report=term-missing
+    
+    - name: Upload Python coverage
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v3
+      with:
+        file: packages/parser/coverage.xml
+        flags: python
+        name: python-coverage
+
+  # Test Node.js CLI Package  
+  test-nodejs:
+    name: Test Node.js CLI
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: ['16', '18', '20']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: packages/cli/package-lock.json
+    
+    - name: Install Node.js dependencies
+      working-directory: packages/cli
+      run: npm ci
+    
+    - name: Run Node.js linting
+      working-directory: packages/cli
+      run: npm run lint
+    
+    - name: Run Node.js tests
+      working-directory: packages/cli
+      run: npm run test:coverage
+    
+    - name: Upload Node.js coverage
+      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '18'
+      uses: codecov/codecov-action@v3
+      with:
+        file: packages/cli/coverage/lcov.info
+        flags: nodejs
+        name: nodejs-coverage
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test-python, test-nodejs]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: packages/cli/package-lock.json
+    
+    - name: Install Python package
+      working-directory: packages/parser
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    
+    - name: Install Node.js package
+      working-directory: packages/cli
+      run: npm ci
+    
+    - name: Run integration tests
+      run: |
+        # Python integration tests
+        python tests/integration_test.py
+        
+        # Node.js integration tests
+        cd packages/cli && npm test tests/test_cli.js
+        
+        # Cross-package integration (when implemented)
+        echo "Cross-package integration tests placeholder"
+
+  # Code Quality Checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install Python dependencies
+      working-directory: packages/parser
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    
+    - name: Install Node.js dependencies
+      working-directory: packages/cli
+      run: npm ci
+    
+    - name: Run security checks
+      run: |
+        # Python security check
+        cd packages/parser && pip-audit
+        
+        # Node.js security check
+        cd packages/cli && npm audit --audit-level=moderate
+    
+    - name: Check dependencies
+      run: |
+        # Check for outdated Python packages
+        cd packages/parser && pip list --outdated
+        
+        # Check for outdated Node.js packages
+        cd packages/cli && npm outdated || true
+
+  # Documentation Build
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Validate documentation structure
+      run: |
+        # Check that all required docs exist
+        test -f Docs/Implementation.md
+        test -f Docs/project_structure.md
+        test -f Docs/UI_UX_doc.md
+        
+        echo "✅ All documentation files present"
+    
+    - name: Check markdown formatting
+      uses: DavidAnson/markdownlint-action@v1
+      with:
+        files: 'Docs/*.md'
+        config: '.markdownlint.json'
+        ignore: 'node_modules'
+
+  # Publish Packages (only on release)
+  publish:
+    name: Publish Packages
+    runs-on: ubuntu-latest
+    needs: [test-python, test-nodejs, integration-tests, code-quality]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        registry-url: 'https://registry.npmjs.org'
+    
+    - name: Build Python package
+      working-directory: packages/parser
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build
+    
+    - name: Publish Python package to PyPI
+      working-directory: packages/parser
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        python -m pip install twine
+        python -m twine upload dist/*
+    
+    - name: Build Node.js package
+      working-directory: packages/cli
+      run: npm ci
+    
+    - name: Publish Node.js package to npm
+      working-directory: packages/cli
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: npm publish --access public
+
+  # Notification
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [test-python, test-nodejs, integration-tests, code-quality, docs]
+    if: always()
+    
+    steps:
+    - name: Summary
+      run: |
+        echo "## 🚀 Paper2Data CI/CD Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Test Results:" >> $GITHUB_STEP_SUMMARY
+        echo "- Python Tests: ${{ needs.test-python.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Node.js Tests: ${{ needs.test-nodejs.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Documentation: ${{ needs.docs.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ github.event_name }}" = "release" ]; then
+          echo "### 📦 Package Publishing:" >> $GITHUB_STEP_SUMMARY
+          echo "- Packages will be published to PyPI and npm" >> $GITHUB_STEP_SUMMARY
+        fi 
