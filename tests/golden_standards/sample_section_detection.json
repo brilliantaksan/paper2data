@@ -1,0 +1,37 @@
+{
+  "description": "Golden standard for section detection - represents expected high-quality output",
+  "test_case": "academic_paper_sections",
+  "input_data": "# Abstract\n\nThis paper presents a novel approach to machine learning that significantly improves performance on benchmark datasets.\n\n# Introduction\n\nMachine learning has become increasingly important in recent years. Previous work has shown that traditional approaches have limitations.\n\n# Methodology\n\nWe propose a new algorithm that combines the benefits of supervised and unsupervised learning approaches.\n\n## Data Preprocessing\n\nThe data was preprocessed using standard techniques including normalization and feature scaling.\n\n## Model Architecture\n\nOur model consists of three main components: feature extraction, classification, and post-processing.\n\n# Results\n\nExperimental results demonstrate significant improvements over baseline methods.\n\n# Conclusion\n\nIn conclusion, our approach shows promising results and opens new avenues for future research.\n\n# References\n\n[1] Author, A. (2023). Previous Work on Machine Learning. Journal of AI, 15(3), 45-67.\n[2] Researcher, R. (2022). Advances in Classification. Proc. ICML, 123-145.",
+  "expected_output": {
+    "min_sections_detected": 5,
+    "expected_major_sections": [
+      "abstract",
+      "introduction", 
+      "methodology",
+      "results",
+      "conclusion",
+      "references"
+    ],
+    "expected_subsections": [
+      "data_preprocessing",
+      "model_architecture"
+    ],
+    "content_quality": {
+      "sections_have_content": true,
+      "no_header_leakage": true,
+      "proper_content_extraction": true
+    }
+  },
+  "quality_metrics": {
+    "section_detection_rate": 0.95,
+    "major_section_detection_rate": 1.0,
+    "content_extraction_accuracy": 0.95,
+    "false_positive_rate": 0.05
+  },
+  "performance_benchmarks": {
+    "max_processing_time_seconds": 0.1,
+    "max_memory_usage_mb": 10
+  },
+  "created_date": "2025-01-12",
+  "version": "1.0.0"
+} 

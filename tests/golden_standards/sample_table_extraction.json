@@ -1,0 +1,25 @@
+{
+  "description": "Golden standard for table extraction - represents expected high-quality output",
+  "test_case": "academic_performance_table",
+  "input_data": "Method      Dataset    Accuracy   F1-Score   Time(s)\nSVM        MNIST      0.951      0.948      23.4\nRF         MNIST      0.963      0.961      45.2\nXGBoost    MNIST      0.987      0.985      67.8\nSVM        CIFAR-10   0.654      0.651      89.1\nRF         CIFAR-10   0.678      0.675      134.7\nXGBoost    CIFAR-10   0.701      0.698      201.3",
+  "expected_output": {
+    "format": "csv",
+    "column_count": 5,
+    "row_count": 6,
+    "header_columns": ["Method", "Dataset", "Accuracy", "F1-Score", "Time(s)"],
+    "min_confidence": 0.8,
+    "csv_structure": {
+      "has_header": true,
+      "expected_lines": 7,
+      "first_line": "Method,Dataset,Accuracy,F1-Score,Time(s)"
+    }
+  },
+  "quality_metrics": {
+    "extraction_success_rate": 1.0,
+    "header_detection_accuracy": 1.0,
+    "column_structure_accuracy": 1.0,
+    "false_positive_rate": 0.0
+  },
+  "created_date": "2025-01-12",
+  "version": "1.0.0"
+} 
