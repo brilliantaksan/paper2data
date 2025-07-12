@@ -73,14 +73,14 @@ from .performance import (
 )
 from .equation_processor import (
     EquationProcessor,
-    EquationDetector,
-    MathematicalEquation,
-    EquationType,
-    EquationComplexity,
-    get_equation_processor,
+    EquationRegion,
+    EquationExtractionResult,
+    MathematicalPatternDetector,
+    LaTeXConverter,
+    MathMLGenerator,
+    create_equation_processor,
     process_equations_from_pdf,
-    export_equations_to_latex,
-    export_equations_to_mathml
+    integrate_with_extractor
 )
 from .advanced_figure_processor import (
     AdvancedFigureProcessor,
@@ -107,6 +107,35 @@ from .metadata_extractor import (
     extract_metadata,
     export_metadata,
     metadata_extractor
+)
+from .enhanced_metadata_v1_1 import (
+    EnhancedMetadataExtractor,
+    EnhancedMetadata as EnhancedMetadataV1_1,
+    EnhancedAuthor,
+    Institution,
+    FundingSource,
+    AuthorIdentifier,
+    AuthorNameFormat,
+    InstitutionType,
+    FundingSourceType,
+    InstitutionDatabase,
+    FundingDatabase,
+    create_enhanced_metadata_extractor,
+    integrate_with_content_extractor
+)
+from .bibliographic_parser import (
+    BibliographicParser,
+    BibliographicReference,
+    BibliographicAuthor,
+    BibliographicDatabase,
+    BibliographicNormalizer,
+    CitationStyleDetector,
+    ReferenceParser,
+    CitationStyle,
+    ReferenceType,
+    CitationQuality,
+    create_bibliographic_parser,
+    integrate_with_enhanced_metadata
 )
 from .citation_network_analyzer import (
     CitationNetworkAnalyzer,
@@ -195,193 +224,121 @@ from .utils import (
 # Help system
 from .help_system import help_system
 
+# Multi-format output system
+from .multi_format_exporter import (
+    MultiFormatExporter,
+    ExportConfiguration,
+    ExportedDocument,
+    OutputFormat,
+    TemplateTheme,
+    HTMLExporter,
+    LaTeXExporter,
+    WordExporter,
+    EPUBExporter,
+    MarkdownExporter,
+    BaseFormatExporter
+)
+
+# Enhanced Plugin System v1.1
+from .plugin_dependency_manager import (
+    DependencyManager,
+    VersionConstraint,
+    DependencyType,
+    ConflictResolution,
+    DependencyNode,
+    DependencyConflict,
+    DependencyResolution
+)
+from .plugin_marketplace import (
+    PluginMarketplace,
+    MarketplacePlugin,
+    PluginCategory,
+    PluginStatus,
+    SecurityStatus,
+    PluginRating,
+    PluginStats,
+    SecurityScan,
+    SearchFilter,
+    get_marketplace,
+    initialize_marketplace
+)
+from .plugin_system_enhanced import (
+    EnhancedPluginSystem,
+    PluginSystemStatus,
+    PluginHealth,
+    SystemMetrics,
+    get_enhanced_plugin_system,
+    initialize_enhanced_plugin_system
+)
+
+# All exports
 __all__ = [
-    # Ingestors
-    "PDFIngestor",
-    "URLIngestor", 
-    "DOIIngestor",
-    "create_ingestor",
+    # Core functionality
+    "PDFIngestor", "URLIngestor", "DOIIngestor", "create_ingestor",
     
-    # Extractors
-    "ContentExtractor",
-    "SectionExtractor",
-    "FigureExtractor",
-    "TableExtractor",
-    "CitationExtractor",
-    "extract_all_content",
-    "extract_all_content_optimized",
+    # Configuration system
+    "ConfigManager", "ConfigurationStatus", "load_config", "save_config",
+    "create_config_interactive", "get_configuration_status", "fix_configuration",
+    "get_config_help", "config_manager", "Paper2DataConfig", "CONFIG_PROFILES",
     
-    # API Integration
-    "ArxivAPIClient",
-    "DOIAPIClient",
-    "BatchProcessor",
-    "arxiv_client",
-    "doi_client",
-    "batch_processor",
-    "api_cache",
+    # Smart defaults and validation
+    "get_smart_config", "get_system_info", "create_config_file", "get_config_profiles",
+    "smart_defaults", "validate_config", "validate_config_file", "get_validation_report",
+    "fix_config_issues", "config_validator",
     
-    # Performance Optimization
-    "ResourceMonitor",
-    "PerformanceCache",
-    "ParallelExtractor",
-    "PerformanceBatchProcessor",
-    "StreamingProcessor",
-    "ProgressPersistence",
-    "get_performance_cache",
-    "get_resource_monitor",
-    "get_parallel_extractor",
-    "extract_with_full_optimization",
-    "get_system_recommendations",
-    "clear_all_caches",
-    "memory_optimized",
-    "with_performance_monitoring",
+    # Content extraction
+    "ContentExtractor", "SectionExtractor", "FigureExtractor", "TableExtractor",
+    "CitationExtractor", "extract_all_content", "extract_all_content_optimized",
     
-    # Equation Processing (Stage 5)
-    "EquationProcessor",
-    "EquationDetector",
-    "MathematicalEquation",
-    "EquationType",
-    "EquationComplexity",
-    "get_equation_processor",
-    "process_equations_from_pdf",
-    "export_equations_to_latex",
-    "export_equations_to_mathml",
+    # API integration
+    "ArxivAPIClient", "DOIAPIClient", "BatchProcessor", "arxiv_client",
+    "doi_client", "batch_processor", "api_cache",
     
-    # Advanced Figure Processing (Stage 5)
-    "AdvancedFigureProcessor",
-    "CaptionDetector",
-    "ImageAnalyzer",
-    "FigureClassifier",
-    "AdvancedFigure",
-    "FigureCaption",
-    "ImageAnalysis",
-    "FigureType",
-    "ImageQuality",
-    "CaptionPosition",
-    "get_advanced_figure_processor",
-    "process_advanced_figures",
+    # Performance optimization
+    "ResourceMonitor", "PerformanceCache", "ParallelExtractor", "StreamingProcessor",
+    "ProgressPersistence", "get_performance_cache", "get_resource_monitor",
+    "get_parallel_extractor", "extract_with_full_optimization", "get_system_recommendations",
+    "clear_all_caches", "memory_optimized", "with_performance_monitoring",
     
-    # Metadata Extraction (Stage 5)
-    "MetadataExtractor",
-    "EnhancedMetadata",
-    "Author",
-    "PublicationInfo",
-    "Citation",
-    "PaperType",
-    "PublicationStatus",
-    "extract_metadata",
-    "export_metadata",
-    "metadata_extractor",
+    # Advanced processing
+    "EquationProcessor", "EquationRegion", "EquationExtractionResult",
+    "MathematicalPatternDetector", "LaTeXConverter", "MathMLGenerator",
+    "create_equation_processor", "process_equations_from_pdf", "integrate_with_extractor",
     
-    # Citation Network Analysis (Stage 5)
-    "CitationNetworkAnalyzer",
-    "NetworkNode",
-    "NetworkEdge",
-    "NetworkMetrics",
-    "AuthorMetrics",
-    "CitationInfluence",
-    "NetworkType",
-    "CentralityMetric",
-    "build_citation_network",
-    "analyze_citation_networks",
-    "citation_network_analyzer",
+    # Advanced figure processing
+    "AdvancedFigureProcessor", "CaptionDetector", "ImageAnalyzer", "FigureClassifier",
+    "AdvancedFigure", "FigureCaption", "FigureType", "CaptionType", "ImageFeatures",
+    "create_advanced_figure_processor", "process_figures_from_pdf",
+    "integrate_advanced_figures_with_extractor",
     
-    # Output Formatting (Stage 5)
-    "OutputFormat",
-    "FormatConfig",
-    "BaseFormatter",
-    "JSONFormatter",
-    "HTMLFormatter",
-    "LaTeXFormatter",
-    "XMLFormatter",
-    "CSVFormatter",
-    "MarkdownFormatter",
-    "DOCXFormatter",
-    "FormatterFactory",
-    "format_output",
-    "batch_format",
-    "export_to_html",
-    "export_to_latex",
-    "export_to_xml",
-    "export_to_csv",
-    "export_to_markdown",
-    "export_all_formats",
-    "default_config",
+    # Enhanced metadata extraction
+    "EnhancedMetadataExtractor", "AuthorNameFormat", "InstitutionType", "FundingSourceType",
+    "InstitutionDatabase", "FundingDatabase", "MetadataQuality", "create_enhanced_metadata_extractor",
+    "extract_enhanced_metadata_from_pdf", "integrate_enhanced_metadata_with_extractor",
     
-    # Plugin System (Stage 5)
-    "PluginManager",
-    "BasePlugin",
-    "PluginMetadata",
-    "PluginInfo",
-    "PluginStatus",
-    "HookPriority",
-    "HookRegistration",
-    "plugin_hook",
-    "get_plugin_manager",
-    "initialize_plugin_system",
+    # Bibliographic parsing
+    "BibliographicParser", "CitationStyle", "ReferenceType", "BibliographicReference",
+    "CitationQuality", "CitationStyleDetector", "ReferenceParser", "BibliographicNormalizer",
+    "create_bibliographic_parser", "parse_bibliography_from_pdf", "integrate_bibliographic_parser_with_extractor",
     
-    # Plugin Hooks (Stage 5)
-    "HookCategory",
-    "HookDefinition",
-    "execute_hook",
-    "execute_hook_until_success",
-    "register_hook",
-    "get_hook_definition",
-    "list_hooks_by_category",
-    "get_all_hook_names",
-    "validate_hook_name",
-    "get_hook_documentation",
-    "ALL_HOOKS",
-    "HOOK_CATEGORIES",
+    # Multi-format export system
+    "MultiFormatExporter", "ExportConfiguration", "ExportedDocument", "OutputFormat",
+    "TemplateTheme", "HTMLExporter", "LaTeXExporter", "WordExporter", "EPUBExporter",
+    "MarkdownExporter", "BaseFormatExporter",
     
-    # Configuration System (Stage 5)
-    "ConfigManager",
-    "ConfigurationStatus",
-    "load_config",
-    "save_config",
-    "create_config_interactive",
-    "get_configuration_status",
-    "fix_configuration",
-    "get_config_help",
-    "config_manager",
-    "Paper2DataConfig",
-    "CONFIG_PROFILES",
-    "get_smart_config",
-    "get_system_info",
-    "create_config_file",
-    "get_config_profiles",
-    "smart_defaults",
-    "validate_config",
-    "validate_config_file",
-    "get_validation_report",
-    "fix_config_issues",
-    "config_validator",
+    # Enhanced Plugin System v1.1
+    "DependencyManager", "VersionConstraint", "DependencyType", "ConflictResolution",
+    "DependencyNode", "DependencyConflict", "DependencyResolution",
+    "PluginMarketplace", "MarketplacePlugin", "PluginCategory", "PluginStatus",
+    "SecurityStatus", "PluginRating", "PluginStats", "SecurityScan", "SearchFilter",
+    "get_marketplace", "initialize_marketplace",
+    "EnhancedPluginSystem", "PluginSystemStatus", "PluginHealth", "SystemMetrics",
+    "get_enhanced_plugin_system", "initialize_enhanced_plugin_system",
     
-    # Help System (Stage 5 - Task 8)
-    "help_system",
-    
-    # Utilities
-    "setup_logging",
-    "get_logger",
-    "validate_input",
-    "format_output",
-    "clean_text",
-    "load_config",
-    "save_json",
-    "ensure_directory",
-    "create_output_structure",
-    "progress_callback",
-    "suppress_stderr",
-    "normalize_url",
-    "normalize_arxiv_url",
-    "normalize_doi",
-    "validate_arxiv_id",
-    "validate_doi",
-    "extract_identifiers_from_text",
-    "validate_url_accessibility",
-    "ProcessingError",
-    "ValidationError",
-    "ConfigurationError"
+    # Utility functions
+    "get_logger", "setup_logging", "format_output", "clean_text", "ensure_directory",
+    "save_json", "create_output_structure", "progress_callback", "ValidationError",
+    "ProcessingError", "ConfigurationError"
 ]
 
 # Package metadata
