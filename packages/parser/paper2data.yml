@@ -4,20 +4,20 @@ output:
   preserve_structure: true
   create_readme: true
   organize_by_type: true
-  include_raw_text: false
+  include_raw_text: true
 processing:
-  mode: balanced
+  mode: thorough
   extract_figures: true
   extract_tables: true
   extract_citations: true
-  extract_equations: false
+  extract_equations: true
   max_file_size_mb: 100
   parallel_workers: 2
   memory_limit_mb: 1024
-  timeout_seconds: 450
+  timeout_seconds: 1350
 tables:
   output_format: csv
-  confidence_threshold: 0.7
+  confidence_threshold: 0.9
   max_false_positives: 0.05
   detect_headers: true
   merge_cells: true
@@ -28,8 +28,8 @@ figures:
   min_width: 100
   min_height: 100
   extract_captions: true
-  analyze_content: false
-  quality: 95
+  analyze_content: true
+  quality: 100
 logging:
   level: INFO
   format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -42,7 +42,7 @@ api:
   timeout_seconds: 30
   max_retries: 3
   cache_enabled: true
-  cache_ttl_hours: 24
+  cache_ttl_hours: 168
 plugins:
   enabled: true
   plugin_directories:
@@ -54,11 +54,11 @@ version: 1.0.0
 profile: default
 _metadata:
   generated_by: Paper2Data Smart Defaults
-  use_case: balanced
+  use_case: research
   system_info:
     cpu_cores: 8
     memory_gb: 8.0
-    storage_gb: 6
+    storage_gb: 5
     platform: Darwin
     has_gpu: false
   version: 1.0.0

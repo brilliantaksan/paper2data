@@ -1,7 +1,7 @@
 {
   "name": "paper2data-cli",
-  "version": "1.0.0",
-  "description": "Command-line interface for Paper2Data - convert academic papers to structured data repositories",
+  "version": "1.1.0",
+  "description": "Command-line interface for Paper2Data v1.1 - Enterprise-grade academic paper processing with enhanced plugin system and multi-format export",
   "main": "src/index.js",
   "bin": {
     "paper2data": "src/index.js"

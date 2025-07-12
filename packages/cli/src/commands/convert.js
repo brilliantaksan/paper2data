@@ -1,7 +1,8 @@
 /**
- * Paper2Data CLI - Convert Command
+ * Paper2Data CLI - Convert Command v1.1
  *
- * Main conversion command for processing academic papers.
+ * Enhanced conversion command for processing academic papers with v1.1 features.
+ * Includes plugin system, multi-format export, mathematical processing, and advanced figure processing.
  */
 
 const { Command } = require('commander')
@@ -57,7 +58,7 @@ async function callPythonParser (input, options) {
     // Prepare Python command
     const pythonArgs = ['-m', 'paper2data', 'convert', input]
 
-    // Add options
+    // Add basic options
     if (options.output) {
       pythonArgs.push('--output', options.output)
     }
@@ -80,6 +81,60 @@ async function callPythonParser (input, options) {
       pythonArgs.push('--dry-run')
     }
 
+    // v1.1 Enhanced Options
+    if (options.plugins) {
+      pythonArgs.push('--plugins', options.plugins)
+    }
+
+    if (options.template) {
+      pythonArgs.push('--template', options.template)
+    }
+
+    if (options.metadata) {
+      pythonArgs.push('--metadata', options.metadata)
+    }
+
+    if (options.equations) {
+      pythonArgs.push('--equations')
+    }
+
+    if (options.noEquations) {
+      pythonArgs.push('--no-equations')
+    }
+
+    if (options.advancedFigures) {
+      pythonArgs.push('--advanced-figures')
+    }
+
+    if (options.noAdvancedFigures) {
+      pythonArgs.push('--no-advanced-figures')
+    }
+
+    if (options.bibliographic) {
+      pythonArgs.push('--bibliographic')
+    }
+
+    if (options.noBibliographic) {
+      pythonArgs.push('--no-bibliographic')
+    }
+
+    if (options.citationNetwork) {
+      pythonArgs.push('--citation-network')
+    }
+
+    if (options.noCitationNetwork) {
+      pythonArgs.push('--no-citation-network')
+    }
+
+    if (options.performance) {
+      pythonArgs.push('--performance')
+    }
+
+    if (options.noPerformance) {
+      pythonArgs.push('--no-performance')
+    }
+
+    // Legacy options (maintained for backward compatibility)
     if (!options.extractFigures) {
       pythonArgs.push('--no-figures')
     }
@@ -167,25 +222,54 @@ async function callPythonParser (input, options) {
   })
 }
 
-// Create convert command
+// Create enhanced convert command with v1.1 features
 const convertCommand = new Command('convert')
-  .description('Convert academic paper to structured data repository')
+  .description('Convert academic paper to structured data repository with v1.1 enhanced features')
   .argument('<input>', 'Input source: PDF file, arXiv URL, or DOI')
   .option('-o, --output <directory>', 'Output directory')
-  .option('-f, --format <format>', 'Output format for metadata', 'json')
+  .option('-f, --format <formats>', 'Output formats (comma-separated): json,html,latex,xml,csv,markdown,docx,epub', 'json')
+  .option('--template <theme>', 'Template theme: academic,modern,minimal,presentation', 'academic')
+  .option('--plugins <plugins>', 'Comma-separated list of plugins to use')
+  .option('--metadata <level>', 'Metadata extraction level: basic,enhanced,full', 'enhanced')
+  
+  // v1.1 Mathematical Processing
+  .option('--equations', 'Enable mathematical equation processing (default: true)', true)
+  .option('--no-equations', 'Disable mathematical equation processing')
+  
+  // v1.1 Advanced Figure Processing
+  .option('--advanced-figures', 'Enable AI-powered figure analysis (default: true)', true)
+  .option('--no-advanced-figures', 'Disable AI-powered figure analysis')
+  
+  // v1.1 Bibliographic Processing
+  .option('--bibliographic', 'Enable bibliographic parsing (default: true)', true)
+  .option('--no-bibliographic', 'Disable bibliographic parsing')
+  .option('--citation-network', 'Enable citation network analysis (default: true)', true)
+  .option('--no-citation-network', 'Disable citation network analysis')
+  
+  // v1.1 Performance Features
+  .option('--performance', 'Enable performance optimizations (default: true)', true)
+  .option('--no-performance', 'Disable performance optimizations')
+  
+  // Legacy options (maintained for backward compatibility)
   .option('--extract-figures', 'Extract figures (default: true)', true)
   .option('--no-extract-figures', 'Skip figure extraction')
   .option('--extract-tables', 'Extract tables (default: true)', true)
   .option('--no-extract-tables', 'Skip table extraction')
   .option('--config <file>', 'Configuration file path')
+  
   .action(async (input, options) => {
-    console.log(chalk.blue('📄 Paper2Data Converter'))
+    console.log(chalk.blue('📄 Paper2Data Converter v1.1'))
     console.log(chalk.gray('Input:'), input)
     console.log(chalk.gray('Output:'), options.output || 'auto-generated')
-    console.log(chalk.gray('Format:'), options.format)
+    console.log(chalk.gray('Formats:'), options.format)
+    console.log(chalk.gray('Template:'), options.template)
+    if (options.plugins) {
+      console.log(chalk.gray('Plugins:'), options.plugins)
+    }
+    console.log(chalk.gray('Metadata:'), options.metadata)
     console.log()
 
-    const spinner = ora('Initializing conversion...').start()
+    const spinner = ora('Initializing v1.1 conversion...').start()
 
     try {
       // Validate input
@@ -197,16 +281,16 @@ const convertCommand = new Command('convert')
       spinner.text = `Detected input type: ${inputType}`
       await new Promise(resolve => setTimeout(resolve, 300))
 
-      // Call Python parser
-      spinner.text = 'Starting paper processing...'
+      // Call Python parser with v1.1 features
+      spinner.text = 'Starting enhanced paper processing...'
       const result = await callPythonParser(input, options)
 
       if (result.success) {
-        spinner.succeed('Conversion completed successfully!')
+        spinner.succeed('v1.1 conversion completed successfully!')
 
-        // Display results
-        console.log(chalk.green('\n✅ Conversion Complete!'))
-        console.log(chalk.cyan('\nExtraction Summary:'))
+        // Display enhanced results
+        console.log(chalk.green('\n✅ v1.1 Conversion Complete!'))
+        console.log(chalk.cyan('\n📊 Enhanced Extraction Summary:'))
 
         if (result.summary) {
           const summary = result.summary
@@ -216,13 +300,27 @@ const convertCommand = new Command('convert')
           console.log(chalk.gray('  🖼️  Figures:'), summary.figures_found || 0)
           console.log(chalk.gray('  📊 Tables:'), summary.tables_found || 0)
           console.log(chalk.gray('  📚 References:'), summary.references_found || 0)
+          
+          // v1.1 Enhanced metrics
+          if (summary.equations_found) {
+            console.log(chalk.gray('  🧮 Equations:'), summary.equations_found)
+          }
+          if (summary.authors_found) {
+            console.log(chalk.gray('  👥 Authors:'), summary.authors_found)
+          }
+          if (summary.institutions_found) {
+            console.log(chalk.gray('  🏛️  Institutions:'), summary.institutions_found)
+          }
+          if (summary.funding_sources) {
+            console.log(chalk.gray('  💰 Funding Sources:'), summary.funding_sources)
+          }
         }
 
-        console.log(chalk.cyan('\nOutput Directory:'))
+        console.log(chalk.cyan('\n📂 Output Directory:'))
         console.log(chalk.gray('  📂'), result.output_directory)
 
         if (result.files_created) {
-          console.log(chalk.cyan('\nFiles Created:'))
+          console.log(chalk.cyan('\n�� Files Created:'))
           const files = result.files_created
           if (files.sections > 0) {
             console.log(chalk.gray('  📄'), `${files.sections} section files`)
@@ -233,14 +331,45 @@ const convertCommand = new Command('convert')
           if (files.tables > 0) {
             console.log(chalk.gray('  📊'), `${files.tables} table files`)
           }
+          if (files.equations > 0) {
+            console.log(chalk.gray('  🧮'), `${files.equations} equation files`)
+          }
+          if (files.exports > 0) {
+            console.log(chalk.gray('  📤'), `${files.exports} export files`)
+          }
           console.log(chalk.gray('  📋'), `${files.metadata_files} metadata files`)
           console.log(chalk.gray('  📖'), '1 README file')
         }
 
+        // v1.1 Plugin information
+        if (result.plugins_used) {
+          console.log(chalk.cyan('\n🔌 Plugins Used:'))
+          result.plugins_used.forEach(plugin => {
+            console.log(chalk.gray('  🔌'), plugin.name, chalk.gray(`(${plugin.version})`))
+          })
+        }
+
+        // v1.1 Export information
+        if (result.exports_created) {
+          console.log(chalk.cyan('\n📤 Exports Created:'))
+          Object.entries(result.exports_created).forEach(([format, path]) => {
+            console.log(chalk.gray('  📤'), `${format.toUpperCase()}:`, path)
+          })
+        }
+
+        console.log(chalk.yellow('\n💡 v1.1 Features:'))
+        console.log(chalk.gray('  • Enhanced plugin system with marketplace integration'))
+        console.log(chalk.gray('  • AI-powered figure analysis and classification'))
+        console.log(chalk.gray('  • Mathematical equation processing with LaTeX support'))
+        console.log(chalk.gray('  • Advanced metadata extraction with author disambiguation'))
+        console.log(chalk.gray('  • Multi-format export with professional templates'))
+        console.log(chalk.gray('  • Citation network analysis and bibliographic parsing'))
+        
         console.log(chalk.yellow('\n💡 Next steps:'))
         console.log(chalk.gray('  • Review extracted content in the output directory'))
         console.log(chalk.gray('  • Check the README.md for an overview'))
-        console.log(chalk.gray('  • Validate figures and tables for accuracy'))
+        console.log(chalk.gray('  • Explore multi-format exports in the exports/ directory'))
+        console.log(chalk.gray('  • Validate figures and equations for accuracy'))
       } else {
         spinner.fail('Conversion failed')
         console.error(chalk.red('\n❌ Conversion Failed'))

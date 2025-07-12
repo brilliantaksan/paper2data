@@ -307,4 +307,33 @@ paper2data convert 10.1038/nature12373
 
 # Test v1.1 features
 python -c "from paper2data import get_enhanced_plugin_system; print('✅ Enhanced Plugin System Ready')"
-``` 
+```
+
+## 🌐 **NEW: Web Demo Interface**
+
+Try Paper2Data instantly in your browser! Perfect for researchers who want to test the capabilities without installation.
+
+**🚀 Quick Start:**
+```bash
+cd web-demo
+./start.sh
+```
+
+Then open http://localhost:8000
+
+**Features:**
+- 📄 **Drag & Drop PDF Upload** - Process papers instantly
+- 🌐 **arXiv Integration** - Enter arXiv URLs directly  
+- 🔗 **DOI Resolution** - Process papers by DOI
+- 📊 **Real-time Progress** - See processing status
+- 📦 **Downloadable Results** - Get organized zip files
+
+**Deploy Your Own:**
+- ☁️ [Railway](https://railway.app) (Free tier available)
+- 🔺 [Vercel](https://vercel.com) (Free for personal)
+- 🐙 [DigitalOcean](https://digitalocean.com) ($12/month)
+- 🔧 [Self-hosted VPS](web-demo/DEPLOYMENT.md) ($5/month)
+
+See [web-demo/DEPLOYMENT.md](web-demo/DEPLOYMENT.md) for detailed deployment instructions.
+
+---
