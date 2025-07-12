@@ -1,0 +1,3 @@
+We perform rolling one-step-ahead forecasts on each series using:
+• a fixed training window of length W = 100,
+• a forecast horizon of H = 150, and

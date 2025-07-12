@@ -1,0 +1,7 @@
+their ability to capture higher-order relationships within larger
+groups of instances.
+To address this challenge, recent works have introduced
+N-tuple weak supervision to handle group-wise relations.
+For example, N-tuple comparison learning (NT-Comp) [22]
+assumes a ranking over the N instances in each tuple based on
+their probabilities of being positive, providing richer ordinal

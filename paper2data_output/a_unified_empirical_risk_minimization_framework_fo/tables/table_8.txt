@@ -1,0 +1,4 @@
+Data Engineering, vol. 34, no. 12, pp. 5854–5868, 2022.
+[4] Y. Cao, L. Feng, Y. Xu, B. An, G. Niu, and M. Sugiyama, “Learning
+from similarity-confidence data,” in International Conference on Ma-
+chine Learning, pp. 1272–1282, PMLR, 2021.

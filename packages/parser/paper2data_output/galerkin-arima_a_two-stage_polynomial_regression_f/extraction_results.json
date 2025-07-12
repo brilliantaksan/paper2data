@@ -1,0 +1,64 @@
+{
+  "content": {
+    "metadata": {
+      "page_count": 13,
+      "title": "Galerkin-ARIMA: A Two-Stage Polynomial Regression Framework for Fast Rolling One-Step-Ahead Forecasting",
+      "author": "Haojie Liu; Zihan Lin",
+      "subject": "",
+      "creator": "arXiv GenPDF (tex2pdf:)",
+      "creation_date": ""
+    },
+    "full_text": "",
+    "pages": {
+      "1": "",
+      "2": "",
+      "3": "",
+      "4": "",
+      "5": "",
+      "6": "",
+      "7": "",
+      "8": "",
+      "9": "",
+      "10": "",
+      "11": "",
+      "12": "",
+      "13": ""
+    },
+    "statistics": {
+      "page_count": 13,
+      "word_count": 0,
+      "character_count": 0,
+      "avg_words_per_page": 0.0
+    }
+  },
+  "sections": {
+    "sections": {},
+    "section_count": 0,
+    "identified_sections": []
+  },
+  "tables": {
+    "tables": [],
+    "table_count": 0,
+    "note": "This is basic table detection. For accurate table extraction, use pdfplumber or similar tools."
+  },
+  "citations": {
+    "reference_list": [],
+    "in_text_citations": [],
+    "reference_count": 0,
+    "in_text_count": 0,
+    "note": "Basic citation extraction - advanced processing requires specialized NLP libraries"
+  },
+  "summary": {
+    "total_pages": 13,
+    "total_words": 0,
+    "sections_found": 0,
+    "figures_found": 24,
+    "tables_found": 0,
+    "references_found": 0
+  },
+  "extraction_timestamp": "",
+  "figures": {
+    "summary": {},
+    "figure_count": 24
+  }
+}

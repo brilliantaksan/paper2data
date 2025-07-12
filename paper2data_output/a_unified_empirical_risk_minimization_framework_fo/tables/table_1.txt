@@ -1,0 +1,4 @@
+(a) MNIST
+(b) Fashion-MNIST
+(c) SVHN
+(d) Cifar-10

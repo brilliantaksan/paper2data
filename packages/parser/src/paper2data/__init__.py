@@ -17,7 +17,8 @@ from .extractor import (
     FigureExtractor, 
     TableExtractor, 
     CitationExtractor,
-    extract_all_content
+    extract_all_content,
+    extract_all_content_optimized
 )
 from .api_integration import (
     ArxivAPIClient,
@@ -27,6 +28,94 @@ from .api_integration import (
     doi_client,
     batch_processor,
     api_cache
+)
+from .performance import (
+    ResourceMonitor,
+    PerformanceCache,
+    ParallelExtractor,
+    BatchProcessor as PerformanceBatchProcessor,
+    StreamingProcessor,
+    ProgressPersistence,
+    get_performance_cache,
+    get_resource_monitor,
+    get_parallel_extractor,
+    extract_with_full_optimization,
+    get_system_recommendations,
+    clear_all_caches,
+    memory_optimized,
+    with_performance_monitoring
+)
+from .equation_processor import (
+    EquationProcessor,
+    EquationDetector,
+    MathematicalEquation,
+    EquationType,
+    EquationComplexity,
+    get_equation_processor,
+    process_equations_from_pdf,
+    export_equations_to_latex,
+    export_equations_to_mathml
+)
+from .advanced_figure_processor import (
+    AdvancedFigureProcessor,
+    CaptionDetector,
+    ImageAnalyzer,
+    FigureClassifier,
+    AdvancedFigure,
+    FigureCaption,
+    ImageAnalysis,
+    FigureType,
+    ImageQuality,
+    CaptionPosition,
+    get_advanced_figure_processor,
+    process_advanced_figures
+)
+from .metadata_extractor import (
+    MetadataExtractor,
+    EnhancedMetadata,
+    Author,
+    PublicationInfo,
+    Citation,
+    PaperType,
+    PublicationStatus,
+    extract_metadata,
+    export_metadata,
+    metadata_extractor
+)
+from .citation_network_analyzer import (
+    CitationNetworkAnalyzer,
+    NetworkNode,
+    NetworkEdge,
+    NetworkMetrics,
+    AuthorMetrics,
+    CitationInfluence,
+    NetworkType,
+    CentralityMetric,
+    build_citation_network,
+    analyze_citation_networks,
+    citation_network_analyzer
+)
+from .output_formatters import (
+    OutputFormat,
+    FormatConfig,
+    BaseFormatter,
+    JSONFormatter,
+    HTMLFormatter,
+    LaTeXFormatter,
+    XMLFormatter,
+    CSVFormatter,
+    MarkdownFormatter,
+    DOCXFormatter,
+    FormatterFactory,
+    format_output,
+    batch_format,
+    export_to_html,
+    export_to_latex,
+    export_to_xml,
+    export_to_csv,
+    export_to_markdown,
+    export_all_formats,
+    default_config
 )
 from .utils import (
     setup_logging, 
@@ -66,6 +155,7 @@ __all__ = [
     "TableExtractor",
     "CitationExtractor",
     "extract_all_content",
+    "extract_all_content_optimized",
     
     # API Integration
     "ArxivAPIClient",
@@ -75,6 +165,94 @@ __all__ = [
     "doi_client",
     "batch_processor",
     "api_cache",
+    
+    # Performance Optimization
+    "ResourceMonitor",
+    "PerformanceCache",
+    "ParallelExtractor",
+    "PerformanceBatchProcessor",
+    "StreamingProcessor",
+    "ProgressPersistence",
+    "get_performance_cache",
+    "get_resource_monitor",
+    "get_parallel_extractor",
+    "extract_with_full_optimization",
+    "get_system_recommendations",
+    "clear_all_caches",
+    "memory_optimized",
+    "with_performance_monitoring",
+    
+    # Equation Processing (Stage 5)
+    "EquationProcessor",
+    "EquationDetector",
+    "MathematicalEquation",
+    "EquationType",
+    "EquationComplexity",
+    "get_equation_processor",
+    "process_equations_from_pdf",
+    "export_equations_to_latex",
+    "export_equations_to_mathml",
+    
+    # Advanced Figure Processing (Stage 5)
+    "AdvancedFigureProcessor",
+    "CaptionDetector",
+    "ImageAnalyzer",
+    "FigureClassifier",
+    "AdvancedFigure",
+    "FigureCaption",
+    "ImageAnalysis",
+    "FigureType",
+    "ImageQuality",
+    "CaptionPosition",
+    "get_advanced_figure_processor",
+    "process_advanced_figures",
+    
+    # Enhanced Metadata Extraction (Stage 5)
+    "MetadataExtractor",
+    "EnhancedMetadata",
+    "Author",
+    "PublicationInfo",
+    "Citation",
+    "PaperType",
+    "PublicationStatus",
+    "extract_metadata",
+    "export_metadata",
+    "metadata_extractor",
+    
+    # Citation Network Analysis (Stage 5)
+    "CitationNetworkAnalyzer",
+    "NetworkNode",
+    "NetworkEdge",
+    "NetworkMetrics",
+    "AuthorMetrics",
+    "CitationInfluence",
+    "NetworkType",
+    "CentralityMetric",
+    "build_citation_network",
+    "analyze_citation_networks",
+    "citation_network_analyzer",
+    
+    # Output Formatters (Stage 5)
+    "OutputFormat",
+    "FormatConfig",
+    "BaseFormatter",
+    "JSONFormatter",
+    "HTMLFormatter",
+    "LaTeXFormatter",
+    "XMLFormatter",
+    "CSVFormatter",
+    "MarkdownFormatter",
+    "DOCXFormatter",
+    "FormatterFactory",
+    "format_output",
+    "batch_format",
+    "export_to_html",
+    "export_to_latex",
+    "export_to_xml",
+    "export_to_csv",
+    "export_to_markdown",
+    "export_all_formats",
+    "default_config",
     
     # Utilities
     "setup_logging",

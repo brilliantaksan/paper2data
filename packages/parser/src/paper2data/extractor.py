@@ -1593,11 +1593,13 @@ class CitationExtractor(BaseExtractor):
 
         return sorted(unique_citations, key=lambda x: x["position"])
 
-def extract_all_content(pdf_content: bytes) -> Dict[str, Any]:
-    """Extract all content types from PDF.
+def extract_all_content(pdf_content: bytes, output_format: Optional[str] = None, output_path: Optional[str] = None) -> Dict[str, Any]:
+    """Extract all content types from PDF with optional output formatting.
 
     Args:
         pdf_content: PDF file as bytes
+        output_format: Optional output format (html, latex, xml, csv, markdown)
+        output_path: Optional path for formatted output
 
     Returns:
         Combined extraction results
@@ -1612,7 +1614,10 @@ def extract_all_content(pdf_content: bytes) -> Dict[str, Any]:
         "sections": {},
         "figures": {},
         "tables": {},
-        "citations": {}
+        "citations": {},
+        "equations": {},
+        "metadata": {},
+        "citation_networks": {}
     }
 
     try:
@@ -1636,6 +1641,67 @@ def extract_all_content(pdf_content: bytes) -> Dict[str, Any]:
         citation_extractor = CitationExtractor(pdf_content)
         results["citations"] = citation_extractor.extract()
 
+        # Equation extraction (Stage 5 feature)
+        try:
+            from .equation_processor import process_equations_from_pdf
+            results["equations"] = process_equations_from_pdf(pdf_content)
+        except ImportError:
+            logger.warning("Equation processing not available")
+            results["equations"] = {"total_equations": 0, "equations": [], "processing_status": "not_available"}
+
+        # Advanced figure processing (Stage 5 feature)
+        try:
+            from .advanced_figure_processor import process_advanced_figures
+            results["advanced_figures"] = process_advanced_figures(pdf_content)
+        except ImportError:
+            logger.warning("Advanced figure processing not available")
+            results["advanced_figures"] = {"total_figures": 0, "figures": [], "processing_status": "not_available"}
+
+        # Enhanced metadata extraction (Stage 5 feature)
+        try:
+            from .metadata_extractor import extract_metadata
+            import tempfile
+            import os
+            
+            # Create temporary file for metadata extraction
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                tmp_file.write(pdf_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                metadata = extract_metadata(tmp_file_path)
+                results["metadata"] = metadata.to_dict()
+            finally:
+                # Clean up temporary file
+                os.unlink(tmp_file_path)
+        except ImportError:
+            logger.warning("Enhanced metadata extraction not available")
+            results["metadata"] = {"processing_status": "not_available"}
+        except Exception as e:
+            logger.error(f"Metadata extraction failed: {str(e)}")
+            results["metadata"] = {"processing_status": "error", "error": str(e)}
+
+        # Citation network analysis (Stage 5 feature)
+        try:
+            from .citation_network_analyzer import analyze_citation_networks
+            
+            # Prepare metadata for network analysis
+            papers_metadata = []
+            if results["metadata"].get("processing_status") not in ["not_available", "error"]:
+                papers_metadata.append(results["metadata"])
+            
+            # Only perform network analysis if we have metadata
+            if papers_metadata:
+                results["citation_networks"] = analyze_citation_networks(papers_metadata)
+            else:
+                results["citation_networks"] = {"processing_status": "insufficient_data", "message": "Network analysis requires metadata"}
+        except ImportError:
+            logger.warning("Citation network analysis not available")
+            results["citation_networks"] = {"processing_status": "not_available"}
+        except Exception as e:
+            logger.error(f"Citation network analysis failed: {str(e)}")
+            results["citation_networks"] = {"processing_status": "error", "error": str(e)}
+
         # Summary statistics
         results["summary"] = {
             "total_pages": results["content"].get("statistics", {}).get("page_count", 0),
@@ -1643,8 +1709,40 @@ def extract_all_content(pdf_content: bytes) -> Dict[str, Any]:
             "sections_found": results["sections"].get("section_count", 0),
             "figures_found": results["figures"].get("figure_count", 0),
             "tables_found": results["tables"].get("total_tables", 0),
-            "references_found": results["citations"].get("reference_count", 0)
+            "references_found": results["citations"].get("reference_count", 0),
+            "equations_found": results["equations"].get("total_equations", 0),
+            "advanced_figures_found": results["advanced_figures"].get("total_figures", 0),
+            "captions_found": results["advanced_figures"].get("total_captions", 0),
+            "metadata_extracted": results["metadata"].get("processing_status", "unknown") not in ["not_available", "error"],
+            "authors_found": len(results["metadata"].get("authors", [])),
+            "keywords_found": len(results["metadata"].get("keywords", [])),
+            "citations_in_metadata": len(results["metadata"].get("citations", [])),
+            "doi_found": bool(results["metadata"].get("doi")),
+            "title_confidence": results["metadata"].get("title_confidence", 0.0),
+            "abstract_confidence": results["metadata"].get("abstract_confidence", 0.0),
+            "author_confidence": results["metadata"].get("author_confidence", 0.0),
+            "citation_networks_analyzed": results["citation_networks"].get("processing_status", "unknown") not in ["not_available", "error", "insufficient_data"],
+            "total_papers_in_network": results["citation_networks"].get("total_papers_analyzed", 0),
+            "network_types_built": len(results["citation_networks"].get("networks", {}))
         }
+
+        # Output formatting (Stage 5 feature)
+        if output_format and output_path:
+            try:
+                from .output_formatters import format_output
+                success = format_output(results, output_path, output_format)
+                if success:
+                    logger.info(f"Results formatted and saved to {output_path} in {output_format} format")
+                    results["output_formatted"] = {"format": output_format, "path": output_path, "success": True}
+                else:
+                    logger.warning(f"Failed to format results in {output_format} format")
+                    results["output_formatted"] = {"format": output_format, "path": output_path, "success": False}
+            except ImportError:
+                logger.warning("Output formatting not available")
+                results["output_formatted"] = {"error": "Output formatting not available"}
+            except Exception as e:
+                logger.error(f"Output formatting failed: {str(e)}")
+                results["output_formatted"] = {"error": str(e)}
 
         logger.info("Comprehensive content extraction completed successfully")
         return results
@@ -1652,3 +1750,111 @@ def extract_all_content(pdf_content: bytes) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Content extraction failed: {str(e)}")
         raise ProcessingError(f"Failed to extract content: {str(e)}")
+
+
+def extract_all_content_optimized(pdf_content: bytes, enable_parallel: bool = True) -> Dict[str, Any]:
+    """Extract all content types from PDF with Stage 4 performance optimizations.
+
+    Args:
+        pdf_content: PDF file as bytes
+        enable_parallel: Whether to use parallel processing (default: True)
+
+    Returns:
+        Combined extraction results with performance optimizations
+    """
+    logger.info("Starting optimized content extraction with Stage 4 enhancements")
+    
+    if enable_parallel:
+        # Use parallel extraction with full optimization
+        try:
+            from .performance import extract_with_full_optimization
+            logger.info("Using parallel extraction with caching and monitoring")
+            results = extract_with_full_optimization(pdf_content)
+            
+            # Add equation processing if not already included
+            if "equations" not in results:
+                try:
+                    from .equation_processor import process_equations_from_pdf
+                    results["equations"] = process_equations_from_pdf(pdf_content)
+                    results["summary"]["equations_found"] = results["equations"].get("total_equations", 0)
+                except ImportError:
+                    logger.warning("Equation processing not available")
+                    results["equations"] = {"total_equations": 0, "equations": [], "processing_status": "not_available"}
+                    results["summary"]["equations_found"] = 0
+            
+            # Add advanced figure processing if not already included
+            if "advanced_figures" not in results:
+                try:
+                    from .advanced_figure_processor import process_advanced_figures
+                    results["advanced_figures"] = process_advanced_figures(pdf_content)
+                    results["summary"]["advanced_figures_found"] = results["advanced_figures"].get("total_figures", 0)
+                    results["summary"]["captions_found"] = results["advanced_figures"].get("total_captions", 0)
+                except ImportError:
+                    logger.warning("Advanced figure processing not available")
+                    results["advanced_figures"] = {"total_figures": 0, "figures": [], "processing_status": "not_available"}
+                    results["summary"]["advanced_figures_found"] = 0
+                    results["summary"]["captions_found"] = 0
+            
+            # Add enhanced metadata extraction if not already included
+            if "metadata" not in results:
+                try:
+                    from .metadata_extractor import extract_metadata
+                    import tempfile
+                    import os
+                    
+                    # Create temporary file for metadata extraction
+                    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                        tmp_file.write(pdf_content)
+                        tmp_file_path = tmp_file.name
+                    
+                    try:
+                        metadata = extract_metadata(tmp_file_path)
+                        results["metadata"] = metadata.to_dict()
+                        # Update summary statistics
+                        results["summary"]["metadata_extracted"] = True
+                        results["summary"]["authors_found"] = len(results["metadata"].get("authors", []))
+                        results["summary"]["keywords_found"] = len(results["metadata"].get("keywords", []))
+                        results["summary"]["citations_in_metadata"] = len(results["metadata"].get("citations", []))
+                        results["summary"]["doi_found"] = bool(results["metadata"].get("doi"))
+                        results["summary"]["title_confidence"] = results["metadata"].get("title_confidence", 0.0)
+                        results["summary"]["abstract_confidence"] = results["metadata"].get("abstract_confidence", 0.0)
+                        results["summary"]["author_confidence"] = results["metadata"].get("author_confidence", 0.0)
+                    finally:
+                        # Clean up temporary file
+                        os.unlink(tmp_file_path)
+                except ImportError:
+                    logger.warning("Enhanced metadata extraction not available")
+                    results["metadata"] = {"processing_status": "not_available"}
+                    results["summary"]["metadata_extracted"] = False
+                    results["summary"]["authors_found"] = 0
+                    results["summary"]["keywords_found"] = 0
+                    results["summary"]["citations_in_metadata"] = 0
+                    results["summary"]["doi_found"] = False
+                    results["summary"]["title_confidence"] = 0.0
+                    results["summary"]["abstract_confidence"] = 0.0
+                    results["summary"]["author_confidence"] = 0.0
+                except Exception as e:
+                    logger.error(f"Metadata extraction failed: {str(e)}")
+                    results["metadata"] = {"processing_status": "error", "error": str(e)}
+                    results["summary"]["metadata_extracted"] = False
+                    results["summary"]["authors_found"] = 0
+                    results["summary"]["keywords_found"] = 0
+                    results["summary"]["citations_in_metadata"] = 0
+                    results["summary"]["doi_found"] = False
+                    results["summary"]["title_confidence"] = 0.0
+                    results["summary"]["abstract_confidence"] = 0.0
+                    results["summary"]["author_confidence"] = 0.0
+            
+            return results
+        except ImportError:
+            logger.warning("Performance module not available, falling back to sequential extraction")
+            return extract_all_content(pdf_content)
+    else:
+        # Use sequential extraction with memory optimization
+        from .performance import memory_optimized
+        
+        @memory_optimized
+        def _extract_sequential():
+            return extract_all_content(pdf_content)
+        
+        return _extract_sequential()

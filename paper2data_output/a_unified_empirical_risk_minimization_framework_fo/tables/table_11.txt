@@ -1,0 +1,10 @@
+pp. 3542–3549, 2019.
+[10] X. Gong, D. Yuan, and W. Bao, “Discriminative metric learning for
+partial label learning,” IEEE Transactions on Neural Networks and
+Learning Systems, vol. PP.
+[11] L. Feng, T. Kaneko, B. Han, G. Niu, B. An, and M. Sugiyama, “Learning
+with multiple complementary labels,” in International Conference on
+Machine Learning, pp. 3072–3081, PMLR, 2020.
+[12] T. Ishida, G. Niu, W. Hu, and M. Sugiyama, “Learning from comple-
+mentary labels,” Advances in neural information processing systems,
+vol. 30, 2017.

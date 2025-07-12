@@ -1,0 +1,4 @@
+(SU) learning [20] determines whether two instances belong
+to the same class, and not-all-negative pairwise(PposU) [21]
+assumes that at least one instance in each pair is positive.
+While these approaches have proven effective in applications

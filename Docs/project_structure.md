@@ -1,393 +1,375 @@
-# Paper2Data Project Structure
+# Paper2Data - Project Structure Documentation
 
-## Root Directory Structure
-
-```bash
-paper2data/
-├── packages/
-│   ├── parser/
-│   │   ├── src/
-│   │   │   ├── __init__.py
-│   │   │   ├── ingest.py
-│   │   │   ├── extractor.py
-│   │   │   └── utils.py
-│   │   ├── tests/
-│   │   │   └── test_parser.py
-│   │   └── pyproject.toml
-│   ├── cli/
-│   │   ├── src/
-│   │   │   ├── index.js
-│   │   │   ├── commands/
-│   │   │   │   ├── init.js
-│   │   │   │   └── convert.js
-│   │   │   └── utils.js
-│   │   ├── tests/
-│   │   │   └── test_cli.js
-│   │   └── package.json
-│   └── examples/
-│       ├── sample_paper.pdf
-│       └── output_template/
-├── docs/
-│   ├── Implementation.md
-│   ├── project_structure.md
-│   └── UI_UX_doc.md
-├── config/
-│   ├── github-actions.yml
-│   └── linting/
-│       ├── eslint.json
-│       └── flake8.ini
-├── tests/
-│   ├── integration_test.py
-│   └── end_to_end.test.js
-├── .gitignore
-├── README.md
-└── LICENSE
-```
-
-## Detailed Directory Structure
-
-### `/packages/` - Monorepo Package Organization
-
-The monorepo approach allows for independent development and deployment of Python and Node.js components while maintaining shared configuration and documentation.
-
-#### `/packages/parser/` - Python Core Package
-**Purpose:** PDF parsing, content extraction, and data processing
+## 📁 **Current Project Structure**
 
 ```
-parser/
-├── src/
-│   ├── __init__.py              # Package initialization and main API
-│   ├── ingest.py                # PDF/URL input handling and validation
-│   ├── extractor.py             # Content extraction and processing logic
-│   └── utils.py                 # Utility functions and helpers
-├── tests/
-│   └── test_parser.py           # Unit tests for parser functionality
-└── pyproject.toml               # Python packaging and dependencies
+Paper2Data/
+├── config/                           # Configuration files
+│   ├── github-actions.yml           # CI/CD workflow configuration
+│   └── linting/                     # Code quality configuration
+│       ├── eslint.json             # JavaScript linting rules
+│       └── flake8.ini              # Python linting configuration
+│
+├── Docs/                            # Documentation directory
+│   ├── Implementation.md            # Comprehensive implementation roadmap
+│   ├── project_structure.md         # This file - project organization
+│   └── UI_UX_doc.md                # User experience guidelines
+│
+├── examples/                        # Usage examples and tutorials
+│   └── sample_pdfs/                # Sample PDF files for testing
+│
+├── packages/                        # Core packages directory
+│   ├── cli/                        # Node.js CLI wrapper
+│   │   ├── package.json            # CLI dependencies and scripts
+│   │   ├── package-lock.json       # Locked dependency versions
+│   │   ├── src/                    # CLI source code
+│   │   │   ├── commands/          # CLI command implementations
+│   │   │   │   ├── convert.js     # Main conversion command
+│   │   │   │   └── init.js        # Project initialization
+│   │   │   └── index.js           # CLI entry point
+│   │   └── tests/                 # CLI unit tests
+│   │       └── test_cli.js        # CLI functionality tests
+│   │
+│   └── parser/                      # Python core processing engine
+│       ├── pyproject.toml          # Python project configuration
+│       ├── src/                    # Python source code
+│       │   └── paper2data/         # Main package
+│       │       ├── __init__.py     # Package initialization
+│       │       ├── __main__.py     # CLI entry point
+│       │       ├── extractor.py    # Core extraction logic
+│       │       ├── ingest.py       # Input handling and validation
+│       │       ├── main.py         # Main processing orchestration
+│       │       └── utils.py        # Utility functions and helpers
+│       ├── tests/                  # Python unit tests
+│       │   └── test_parser.py      # Parser functionality tests
+│       └── venv/                   # Virtual environment (development)
+│
+├── paper2data/                      # Symbolic links for CLI access
+│   ├── cli                         # Link to packages/cli
+│   ├── create-package              # Package creation utilities
+│   └── parser                      # Link to packages/parser
+│
+├── tests/                          # Integration and end-to-end tests
+│   ├── end_to_end.test.js         # Full workflow testing
+│   └── integration_test.py        # Python integration tests
+│
+├── README.md                       # Project overview and quick start
+├── setup_dev.py                   # Development environment setup
+└── verify_setup.py                # Installation verification
 ```
 
-**Key Modules:**
+---
 
-- **`ingest.py`** - Handles multiple input types:
-  - PDF file validation and loading
-  - arXiv URL processing and download
-  - DOI resolution and paper retrieval
-  - Input sanitization and error handling
+## 🎯 **Enhanced Structure Plan**
 
-- **`extractor.py`** - Core extraction functionality:
-  - Text extraction using PyMuPDF
-  - Section detection and parsing
-  - Figure and table extraction
-  - Metadata extraction and bibliography processing
-  - Output formatting (Markdown, CSV, JSON)
-
-- **`utils.py`** - Supporting utilities:
-  - File system operations
-  - Text processing and cleaning
-  - Image processing and conversion
-  - Progress tracking and logging
-  - Configuration management
-
-#### `/packages/cli/` - Node.js CLI Interface
-**Purpose:** User-facing command-line interface and Python bridge
+### **Stage 1: Table Processing Enhancement**
 
 ```
-cli/
-├── src/
-│   ├── index.js                 # Main CLI entry point and argument parsing
-│   ├── commands/
-│   │   ├── init.js              # Repository initialization command
-│   │   └── convert.js           # Main conversion command
-│   └── utils.js                 # CLI utilities and Python bridge
-├── tests/
-│   └── test_cli.js              # CLI command and integration tests
-└── package.json                 # Node.js dependencies and scripts
+packages/parser/src/paper2data/
+├── extractors/                     # Specialized extraction modules
+│   ├── __init__.py
+│   ├── base_extractor.py          # Base extraction interface
+│   ├── table_extractor.py         # Enhanced table processing
+│   ├── figure_extractor.py        # Figure extraction logic
+│   ├── section_extractor.py       # Section detection
+│   └── citation_extractor.py      # Citation processing
+│
+├── formats/                        # Output format handlers
+│   ├── __init__.py
+│   ├── csv_writer.py              # CSV table output
+│   ├── markdown_writer.py         # Markdown formatting
+│   ├── json_writer.py             # JSON metadata output
+│   └── html_writer.py             # HTML export (future)
+│
+└── table_processing/               # Table-specific components
+    ├── __init__.py
+    ├── detection.py               # Table detection algorithms
+    ├── structure_analysis.py      # Row/column identification
+    ├── confidence_scoring.py      # Quality assessment
+    └── csv_conversion.py          # CSV formatting logic
 ```
 
-**Key Modules:**
-
-- **`index.js`** - CLI framework setup:
-  - Commander.js configuration
-  - Global options and help system
-  - Version management and updates
-  - Error handling and user feedback
-
-- **`commands/init.js`** - Repository setup:
-  - Project initialization workflow
-  - Configuration file generation
-  - Template selection and customization
-  - Git repository initialization
-
-- **`commands/convert.js`** - Main conversion logic:
-  - Input validation and preprocessing
-  - Python subprocess management
-  - Progress tracking and user feedback
-  - Output validation and post-processing
-
-- **`utils.js`** - CLI utilities:
-  - Python environment detection
-  - Process management and communication
-  - Progress indicators and formatting
-  - Configuration file handling
-
-#### `/packages/examples/` - Sample Data and Templates
-**Purpose:** Demonstration materials and output templates
-
-```
-examples/
-├── sample_paper.pdf             # Example academic paper for testing
-└── output_template/             # Standard output repository structure
-    ├── README.md.template       # Repository README template
-    ├── metadata.json.template   # Metadata structure template
-    ├── sections/                # Section organization example
-    ├── figures/                 # Figure output structure
-    ├── tables/                  # Table output structure
-    └── .gitignore.template      # Git ignore template for generated repos
-```
-
-### `/docs/` - Documentation
-**Purpose:** Project documentation and specifications
-
-```
-docs/
-├── Implementation.md            # Complete implementation plan with stages
-├── project_structure.md         # This file - project organization guide
-└── UI_UX_doc.md                # CLI design and user experience guide
-```
-
-### `/config/` - Configuration and CI/CD
-**Purpose:** Build, deployment, and code quality configuration
-
-```
-config/
-├── github-actions.yml           # CI/CD workflow definitions
-└── linting/
-    ├── eslint.json              # JavaScript/Node.js linting rules
-    └── flake8.ini               # Python code style and linting rules
-```
-
-**Configuration Details:**
-
-- **`github-actions.yml`** - Automated workflows:
-  - Multi-platform testing (Linux, macOS, Windows)
-  - Python and Node.js environment matrix testing
-  - Package publishing to PyPI and npm
-  - Documentation deployment
-  - Security scanning and dependency updates
-
-- **`linting/`** - Code quality enforcement:
-  - ESLint configuration for consistent JavaScript style
-  - Flake8 rules for Python PEP 8 compliance
-  - Pre-commit hooks integration
-  - IDE integration guidelines
-
-### `/tests/` - Integration and End-to-End Testing
-**Purpose:** Cross-package testing and complete workflow validation
+### **Stage 2: Testing Infrastructure**
 
 ```
 tests/
-├── integration_test.py          # Python-based integration tests
-└── end_to_end.test.js          # Node.js end-to-end workflow tests
+├── unit/                           # Unit tests
+│   ├── test_extractors/           # Extractor module tests
+│   │   ├── test_table_extractor.py
+│   │   ├── test_figure_extractor.py
+│   │   └── test_section_extractor.py
+│   ├── test_formats/              # Output format tests
+│   │   ├── test_csv_writer.py
+│   │   └── test_markdown_writer.py
+│   └── test_utils/                # Utility function tests
+│       └── test_helpers.py
+│
+├── integration/                    # Integration tests
+│   ├── test_full_pipeline.py     # End-to-end workflow
+│   ├── test_api_integration.py   # API functionality
+│   └── test_batch_processing.py  # Performance testing
+│
+├── fixtures/                      # Test data and fixtures
+│   ├── sample_pdfs/              # Test PDF documents
+│   ├── expected_outputs/         # Golden standard results
+│   └── mock_responses/           # API response mocks
+│
+├── benchmarks/                    # Performance benchmarks
+│   ├── speed_tests.py            # Processing speed tests
+│   ├── memory_tests.py           # Memory usage analysis
+│   └── accuracy_tests.py         # Output quality metrics
+│
+└── conftest.py                    # pytest configuration
 ```
 
-**Testing Strategy:**
+### **Stage 3: API Integration**
 
-- **`integration_test.py`** - Parser integration:
-  - Multi-format PDF processing tests
-  - arXiv/DOI integration validation
-  - Output format verification
-  - Error handling and edge cases
-
-- **`end_to_end.test.js`** - Complete workflows:
-  - CLI command testing with real inputs
-  - Python-Node.js communication validation
-  - Repository generation verification
-  - User experience flow testing
-
-## File Naming Conventions
-
-### Python Files (`/packages/parser/`)
-- **Modules:** `snake_case.py` (e.g., `ingest.py`, `extractor.py`)
-- **Classes:** `PascalCase` (e.g., `PDFIngestor`, `ContentExtractor`)
-- **Functions:** `snake_case` (e.g., `extract_figures`, `parse_citations`)
-- **Constants:** `UPPER_SNAKE_CASE` (e.g., `DEFAULT_OUTPUT_DIR`, `MAX_FILE_SIZE`)
-
-### JavaScript Files (`/packages/cli/`)
-- **Files:** `camelCase.js` (e.g., `index.js`, `convert.js`)
-- **Functions:** `camelCase` (e.g., `convertPaper`, `initializeRepo`)
-- **Constants:** `UPPER_SNAKE_CASE` (e.g., `DEFAULT_TIMEOUT`, `PYTHON_COMMAND`)
-
-### Configuration Files
-- **Python:** `pyproject.toml` for package configuration
-- **Node.js:** `package.json` for dependencies and scripts
-- **Linting:** `eslint.json`, `flake8.ini` for code quality rules
-
-### Output Structure (Generated Repositories)
-- **Directories:** `kebab-case` (e.g., `extracted-figures`, `table-data`)
-- **Files:** `snake_case` with descriptive names (e.g., `01_introduction.md`, `figure_1_architecture.png`)
-
-## Module Dependencies and Communication
-
-### Package Interaction Flow
 ```
-CLI Package (Node.js)
-    ↓ subprocess calls
-Parser Package (Python)
-    ↓ file system operations
-Generated Repository Structure
+packages/parser/src/paper2data/
+├── apis/                          # External API integrations
+│   ├── __init__.py
+│   ├── base_api.py               # Base API client interface
+│   ├── arxiv_api.py              # arXiv integration
+│   ├── crossref_api.py           # DOI resolution via CrossRef
+│   ├── publisher_apis.py         # Publisher-specific APIs
+│   └── rate_limiter.py           # API rate limiting
+│
+├── downloaders/                   # Paper download functionality
+│   ├── __init__.py
+│   ├── pdf_downloader.py         # PDF file retrieval
+│   ├── url_validator.py          # URL parsing and validation
+│   ├── cache_manager.py          # Download caching
+│   └── batch_downloader.py       # Bulk download operations
+│
+└── metadata/                      # Metadata processing
+    ├── __init__.py
+    ├── extractor.py              # Metadata extraction
+    ├── enricher.py               # External metadata enrichment
+    ├── validator.py              # Metadata validation
+    └── schema.py                 # Metadata schema definitions
 ```
 
-### Dependency Management
+### **Stage 4: Performance & Scalability**
 
-#### Python Package (`pyproject.toml`)
-```toml
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "paper2data-parser"
-version = "1.0.0"
-dependencies = [
-    "PyMuPDF>=1.23.0",
-    "pdfplumber>=0.9.0",
-    "requests>=2.31.0",
-    "beautifulsoup4>=4.12.0",
-    "pyyaml>=6.0",
-    "pillow>=10.0.0"
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0"
-]
+```
+packages/parser/src/paper2data/
+├── processing/                    # Processing pipeline
+│   ├── __init__.py
+│   ├── pipeline.py               # Main processing pipeline
+│   ├── batch_processor.py        # Batch processing logic
+│   ├── parallel_processor.py     # Multiprocessing support
+│   └── progress_tracker.py       # Progress monitoring
+│
+├── caching/                       # Caching system
+│   ├── __init__.py
+│   ├── file_cache.py            # File-based caching
+│   ├── memory_cache.py          # In-memory caching
+│   └── cache_config.py          # Cache configuration
+│
+└── monitoring/                    # Performance monitoring
+    ├── __init__.py
+    ├── metrics.py               # Performance metrics
+    ├── profiler.py              # Code profiling
+    └── resource_monitor.py      # System resource tracking
 ```
 
-#### Node.js Package (`package.json`)
-```json
-{
-  "name": "paper2data-cli",
-  "version": "1.0.0",
-  "main": "src/index.js",
-  "bin": {
-    "paper2data": "src/index.js"
-  },
-  "dependencies": {
-    "commander": "^11.0.0",
-    "chalk": "^5.3.0",
-    "ora": "^7.0.1",
-    "inquirer": "^9.2.0"
-  },
-  "devDependencies": {
-    "jest": "^29.6.0",
-    "eslint": "^8.45.0"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  }
-}
+### **Stage 5: Advanced Features**
+
+```
+packages/parser/src/paper2data/
+├── plugins/                       # Plugin architecture
+│   ├── __init__.py
+│   ├── plugin_manager.py         # Plugin loading and management
+│   ├── hooks.py                  # Plugin hook definitions
+│   └── examples/                 # Example plugins
+│       ├── latex_plugin.py       # LaTeX equation processing
+│       └── ocr_plugin.py         # OCR integration
+│
+├── equations/                     # Mathematical equation processing
+│   ├── __init__.py
+│   ├── detector.py               # Equation detection
+│   ├── latex_converter.py        # LaTeX conversion
+│   └── mathml_converter.py       # MathML support
+│
+└── advanced_processing/           # Advanced features
+    ├── __init__.py
+    ├── citation_network.py       # Citation analysis
+    ├── semantic_analysis.py      # Content understanding
+    └── quality_assessment.py     # Output quality scoring
 ```
 
-## Environment Configuration
+---
 
-### Development Environment Setup
+## 📊 **Configuration Management**
+
+### **Configuration File Structure**
+
+```
+config/
+├── default.yaml                   # Default configuration settings
+├── development.yaml               # Development environment config
+├── production.yaml               # Production environment config
+├── testing.yaml                  # Testing environment config
+│
+├── extractors/                    # Extractor-specific configs
+│   ├── table_config.yaml         # Table extraction settings
+│   ├── figure_config.yaml        # Figure extraction settings
+│   └── section_config.yaml       # Section detection settings
+│
+├── apis/                         # API configuration
+│   ├── arxiv_config.yaml        # arXiv API settings
+│   ├── crossref_config.yaml     # CrossRef API settings
+│   └── rate_limits.yaml         # Rate limiting configuration
+│
+└── output/                       # Output format configurations
+    ├── csv_format.yaml          # CSV output settings
+    ├── markdown_format.yaml     # Markdown formatting
+    └── json_schema.yaml         # JSON output schema
+```
+
+### **Environment Variables**
+
 ```bash
-# Clone repository
-git clone https://github.com/your-org/paper2data.git
-cd paper2data
+# Core Configuration
+PAPER2DATA_CONFIG_PATH=/path/to/config
+PAPER2DATA_LOG_LEVEL=INFO
+PAPER2DATA_CACHE_DIR=/tmp/paper2data_cache
 
-# Setup Python environment
-cd packages/parser
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-pip install -e ".[dev]"
+# API Keys and Endpoints
+ARXIV_API_KEY=your_api_key
+CROSSREF_API_KEY=your_api_key
+PUBLISHER_API_KEYS={"springer": "key1", "elsevier": "key2"}
 
-# Setup Node.js environment
-cd ../cli
-npm install
-npm link  # Makes paper2data command available globally
+# Performance Settings
+PAPER2DATA_MAX_WORKERS=4
+PAPER2DATA_MEMORY_LIMIT=2GB
+PAPER2DATA_BATCH_SIZE=10
 
-# Run tests
-cd ../../
-python -m pytest packages/parser/tests/
-npm test --prefix packages/cli
-python tests/integration_test.py
-npm test tests/end_to_end.test.js
+# Output Settings
+PAPER2DATA_OUTPUT_DIR=./output
+PAPER2DATA_TEMP_DIR=/tmp/paper2data_temp
 ```
 
-### Production Build Process
-```bash
-# Build Python package
-cd packages/parser
-python -m build
+---
 
-# Build Node.js package
-cd ../cli
-npm pack
+## 🗂️ **Data Flow Architecture**
 
-# Run integration tests
-cd ../../tests
-python integration_test.py
-npm test end_to_end.test.js
+### **Input Processing Pipeline**
+
+```
+Input Sources → Validation → Processing → Enhancement → Output
+     ↓              ↓           ↓           ↓           ↓
+  PDF Files    URL/DOI      Extraction   Metadata    Structured
+  arXiv URLs   Validation   Pipeline     Enrichment   Output
+  DOI Links    File Check   Parallel     Citation     (CSV, MD,
+  Local Files  Format Ver.  Processing   Analysis     JSON, etc.)
 ```
 
-## Build & Deployment Structure
+### **Module Dependencies**
 
-### CI/CD Pipeline (`config/github-actions.yml`)
-```yaml
-name: Paper2Data CI/CD
-
-on: [push, pull_request]
-
-jobs:
-  test-python:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12']
-    
-  test-nodejs:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: ['16', '18', '20']
-    
-  integration-tests:
-    needs: [test-python, test-nodejs]
-    runs-on: ubuntu-latest
-    
-  publish:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [integration-tests]
-    runs-on: ubuntu-latest
+```
+main.py
+├── ingest.py (Input handling)
+│   ├── downloaders/ (API integration)
+│   └── validators/ (Input validation)
+├── extractor.py (Core processing)
+│   ├── extractors/ (Specialized extraction)
+│   ├── processing/ (Pipeline management)
+│   └── caching/ (Performance optimization)
+└── utils.py (Utilities and helpers)
+    ├── formats/ (Output formatting)
+    ├── monitoring/ (Performance tracking)
+    └── plugins/ (Extensibility)
 ```
 
-### Package Publishing
+---
 
-#### Python Package (PyPI)
-- **Package name:** `paper2data-parser`
-- **Installation:** `pip install paper2data-parser`
-- **Import:** `from paper2data import ingest, extractor`
+## 🔧 **Development Workflow**
 
-#### Node.js Package (npm)
-- **Package name:** `paper2data-cli`
-- **Installation:** `npm install -g paper2data-cli`
-- **Usage:** `paper2data convert paper.pdf`
+### **File Naming Conventions**
 
-## Monorepo Benefits
+| **Component** | **Pattern** | **Example** |
+|--------------|-------------|-------------|
+| Extractors | `{type}_extractor.py` | `table_extractor.py` |
+| API Clients | `{service}_api.py` | `arxiv_api.py` |
+| Output Formats | `{format}_writer.py` | `csv_writer.py` |
+| Tests | `test_{module}.py` | `test_table_extractor.py` |
+| Configuration | `{component}_config.yaml` | `table_config.yaml` |
+| Plugins | `{name}_plugin.py` | `latex_plugin.py` |
 
-### Development Advantages
-- **Shared configuration** across Python and Node.js components
-- **Unified testing** and CI/CD pipelines
-- **Consistent documentation** and issue tracking
-- **Synchronized releases** between CLI and parser
+### **Module Organization Principles**
 
-### Deployment Flexibility
-- **Independent publishing** to PyPI and npm
-- **Version synchronization** between packages
-- **Gradual rollout** of features across components
-- **Language-specific optimization** while maintaining integration
+1. **Single Responsibility**: Each module handles one specific aspect
+2. **Clear Interfaces**: Well-defined APIs between modules
+3. **Dependency Injection**: Configurable dependencies for testing
+4. **Error Boundaries**: Isolated error handling per module
+5. **Extensibility**: Plugin-friendly architecture
 
-This monorepo structure provides clear separation of concerns while enabling seamless integration between the Python processing engine and Node.js CLI interface, supporting both developer productivity and user experience. 
+### **Import Structure**
+
+```python
+# Standard library imports
+import os
+import logging
+from typing import Dict, List, Optional
+
+# Third-party imports
+import fitz
+import pandas as pd
+from pydantic import BaseModel
+
+# Local imports
+from paper2data.extractors.base_extractor import BaseExtractor
+from paper2data.formats.csv_writer import CSVWriter
+from paper2data.utils.helpers import clean_text
+```
+
+---
+
+## 📦 **Package Distribution Structure**
+
+### **PyPI Package Structure**
+
+```
+paper2data/
+├── setup.py                      # Package setup configuration
+├── pyproject.toml                # Modern Python packaging
+├── requirements.txt              # Production dependencies
+├── requirements-dev.txt          # Development dependencies
+├── MANIFEST.in                   # Package manifest
+├── README.md                     # Package documentation
+├── LICENSE                       # License information
+└── paper2data/                   # Package source
+    ├── __init__.py              # Package initialization
+    ├── cli.py                   # Command-line interface
+    └── [all source modules]     # Core functionality
+```
+
+### **Docker Container Structure**
+
+```
+docker/
+├── Dockerfile                    # Container definition
+├── docker-compose.yml           # Multi-service setup
+├── requirements.docker.txt      # Container dependencies
+└── entrypoint.sh                # Container entry script
+```
+
+### **GitHub Release Structure**
+
+```
+releases/
+├── CHANGELOG.md                  # Version changelog
+├── binary/                      # Pre-built binaries
+│   ├── paper2data-linux-x64
+│   ├── paper2data-macos-x64
+│   └── paper2data-windows-x64.exe
+└── examples/                    # Usage examples
+    ├── basic_usage.md
+    ├── advanced_features.md
+    └── api_integration.md
+```
+
+---
+
+This project structure is designed to support Paper2Data's evolution from a functional tool to a comprehensive, enterprise-ready academic PDF processing platform. The modular design ensures maintainability, extensibility, and scalability while providing clear separation of concerns and testability. 
