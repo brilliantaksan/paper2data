@@ -1,6 +1,6 @@
 /**
  * Paper2Data CLI - Convert Command
- * 
+ *
  * Main conversion command for processing academic papers.
  */
 
@@ -17,7 +17,7 @@ async function validateInput (input) {
   if (!input || input.trim() === '') {
     throw new Error('Input cannot be empty')
   }
-  
+
   // Check if it's a local file
   if (!input.startsWith('http') && !input.startsWith('doi:') && !input.startsWith('arxiv:')) {
     const exists = await fs.pathExists(input)
@@ -25,7 +25,7 @@ async function validateInput (input) {
       throw new Error(`File not found: ${input}`)
     }
   }
-  
+
   return true
 }
 
@@ -36,19 +36,19 @@ function detectInputType (input) {
     }
     return 'URL'
   }
-  
+
   if (input.startsWith('doi:') || input.startsWith('10.')) {
     return 'DOI'
   }
-  
+
   if (input.startsWith('arxiv:')) {
     return 'arXiv ID'
   }
-  
+
   if (input.endsWith('.pdf')) {
     return 'PDF file'
   }
-  
+
   return 'Unknown'
 }
 
@@ -56,57 +56,57 @@ async function callPythonParser (input, options) {
   return new Promise((resolve, reject) => {
     // Prepare Python command
     const pythonArgs = ['-m', 'paper2data', 'convert', input]
-    
+
     // Add options
     if (options.output) {
       pythonArgs.push('--output', options.output)
     }
-    
+
     if (options.format) {
       pythonArgs.push('--format', options.format)
     }
-    
+
     if (options.config) {
       pythonArgs.push('--config', options.config)
     }
-    
+
     if (options.verbose) {
       pythonArgs.push('--log-level', 'DEBUG')
     } else if (options.quiet) {
       pythonArgs.push('--log-level', 'ERROR')
     }
-    
+
     if (options.dryRun) {
       pythonArgs.push('--dry-run')
     }
-    
+
     if (!options.extractFigures) {
       pythonArgs.push('--no-figures')
     }
-    
+
     if (!options.extractTables) {
       pythonArgs.push('--no-tables')
     }
-    
+
     // Always use JSON output for programmatic processing
     pythonArgs.push('--json-output')
-    
+
     // Spawn Python process
     const pythonProcess = spawn('python3', pythonArgs, {
       stdio: ['pipe', 'pipe', 'pipe']
     })
-    
+
     let stdout = ''
     let stderr = ''
-    
+
     pythonProcess.stdout.on('data', (data) => {
       stdout += data.toString()
     })
-    
+
     pythonProcess.stderr.on('data', (data) => {
       stderr += data.toString()
     })
-    
+
     pythonProcess.on('close', (code) => {
       if (code === 0) {
         try {
@@ -114,10 +114,10 @@ async function callPythonParser (input, options) {
           const lines = stdout.split('\n')
           const cleanLines = lines.filter(line => !line.startsWith('MuPDF error:'))
           const cleanOutput = cleanLines.join('\n').trim()
-          
+
           // Look for the JSON object that starts with "success" field
           const jsonMatch = cleanOutput.match(/\{\s*"success"[\s\S]*\}(?=\s*$)/m)
-          
+
           if (jsonMatch) {
             const jsonString = jsonMatch[0]
             const result = JSON.parse(jsonString)
@@ -156,7 +156,7 @@ async function callPythonParser (input, options) {
         reject(new Error(errorMessage))
       }
     })
-    
+
     pythonProcess.on('error', (err) => {
       if (err.code === 'ENOENT') {
         reject(new Error('Python 3 not found. Please ensure Python 3 is installed and in your PATH.'))
@@ -167,27 +167,6 @@ async function callPythonParser (input, options) {
   })
 }
 
-function generateOutputPath (input) {
-  const inputType = detectInputType(input)
-  const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
-  
-  if (inputType === 'PDF file') {
-    const basename = path.basename(input, '.pdf')
-    return `./paper2data_output/${basename}_${timestamp}`
-  } else if (inputType.includes('arXiv')) {
-    // Extract arXiv ID
-    let arxivId = input
-    if (input.includes('arxiv.org')) {
-      arxivId = input.split('/').pop().replace('.pdf', '')
-    } else if (input.startsWith('arxiv:')) {
-      arxivId = input.slice(6)
-    }
-    return `./paper2data_output/arxiv_${arxivId}_${timestamp}`
-  } else {
-    return `./paper2data_output/paper_${timestamp}`
-  }
-}
-
 // Create convert command
 const convertCommand = new Command('convert')
   .description('Convert academic paper to structured data repository')
@@ -196,7 +175,7 @@ const convertCommand = new Command('convert')
   .option('-f, --format <format>', 'Output format for metadata', 'json')
   .option('--extract-figures', 'Extract figures (default: true)', true)
   .option('--no-extract-figures', 'Skip figure extraction')
-  .option('--extract-tables', 'Extract tables (default: true)', true) 
+  .option('--extract-tables', 'Extract tables (default: true)', true)
   .option('--no-extract-tables', 'Skip table extraction')
   .option('--config <file>', 'Configuration file path')
   .action(async (input, options) => {
@@ -212,7 +191,7 @@ const convertCommand = new Command('convert')
       // Validate input
       spinner.text = 'Validating input source...'
       await validateInput(input)
-      
+
       // Detect input type
       const inputType = detectInputType(input)
       spinner.text = `Detected input type: ${inputType}`
@@ -228,7 +207,7 @@ const convertCommand = new Command('convert')
         // Display results
         console.log(chalk.green('\n✅ Conversion Complete!'))
         console.log(chalk.cyan('\nExtraction Summary:'))
-        
+
         if (result.summary) {
           const summary = result.summary
           console.log(chalk.gray('  📄 Pages:'), summary.total_pages || 'Unknown')
@@ -238,10 +217,10 @@ const convertCommand = new Command('convert')
           console.log(chalk.gray('  📊 Tables:'), summary.tables_found || 0)
           console.log(chalk.gray('  📚 References:'), summary.references_found || 0)
         }
-        
+
         console.log(chalk.cyan('\nOutput Directory:'))
         console.log(chalk.gray('  📂'), result.output_directory)
-        
+
         if (result.files_created) {
           console.log(chalk.cyan('\nFiles Created:'))
           const files = result.files_created
@@ -257,12 +236,11 @@ const convertCommand = new Command('convert')
           console.log(chalk.gray('  📋'), `${files.metadata_files} metadata files`)
           console.log(chalk.gray('  📖'), '1 README file')
         }
-        
+
         console.log(chalk.yellow('\n💡 Next steps:'))
         console.log(chalk.gray('  • Review extracted content in the output directory'))
         console.log(chalk.gray('  • Check the README.md for an overview'))
         console.log(chalk.gray('  • Validate figures and tables for accuracy'))
-        
       } else {
         spinner.fail('Conversion failed')
         console.error(chalk.red('\n❌ Conversion Failed'))
@@ -271,12 +249,11 @@ const convertCommand = new Command('convert')
         }
         process.exit(1)
       }
-
     } catch (error) {
       spinner.fail('Conversion failed')
       console.error(chalk.red('\n❌ Conversion Failed'))
       console.error(chalk.red('Error:'), error.message)
-      
+
       // Provide helpful error messages
       if (error.message.includes('Python 3 not found')) {
         console.log(chalk.yellow('\n💡 Installation Help:'))
@@ -294,7 +271,7 @@ const convertCommand = new Command('convert')
         console.log(chalk.gray('  • Check that URLs are accessible'))
         console.log(chalk.gray('  • Verify DOI format (e.g., 10.1000/182)'))
       }
-      
+
       process.exit(1)
     }
   })
@@ -314,22 +291,22 @@ const validateCommand = new Command('validate')
       // Call Python validator
       const result = await new Promise((resolve, reject) => {
         const pythonArgs = ['-m', 'paper2data', 'validate', input, '--json-output']
-        
+
         const pythonProcess = spawn('python3', pythonArgs, {
           stdio: ['pipe', 'pipe', 'pipe']
         })
-        
+
         let stdout = ''
-        let stderr = ''
-        
+
         pythonProcess.stdout.on('data', (data) => {
           stdout += data.toString()
         })
-        
+
         pythonProcess.stderr.on('data', (data) => {
-          stderr += data.toString()
+          // Log stderr for debugging but don't use it in validation
+          console.debug('Python stderr:', data.toString())
         })
-        
+
         pythonProcess.on('close', (code) => {
           try {
             const result = JSON.parse(stdout)
@@ -338,7 +315,7 @@ const validateCommand = new Command('validate')
             reject(new Error(`Failed to parse validation result: ${e.message}`))
           }
         })
-        
+
         pythonProcess.on('error', (err) => {
           reject(new Error(`Validation failed: ${err.message}`))
         })
@@ -347,7 +324,7 @@ const validateCommand = new Command('validate')
       if (result.valid) {
         spinner.succeed('Input validation successful!')
         console.log(chalk.green('\n✅ Input is valid'))
-        
+
         if (result.metadata) {
           console.log(chalk.cyan('\nInput Information:'))
           const meta = result.metadata
@@ -372,7 +349,6 @@ const validateCommand = new Command('validate')
         }
         process.exit(1)
       }
-
     } catch (error) {
       spinner.fail('Validation failed')
       console.error(chalk.red('\n❌ Validation failed'))
@@ -384,4 +360,4 @@ const validateCommand = new Command('validate')
 // Add subcommands
 convertCommand.addCommand(validateCommand)
 
-module.exports = convertCommand 
+module.exports = convertCommand

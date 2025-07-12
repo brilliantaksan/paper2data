@@ -1,0 +1,64 @@
+output:
+  format: json
+  directory: paper2data_output
+  preserve_structure: true
+  create_readme: true
+  organize_by_type: true
+  include_raw_text: false
+processing:
+  mode: balanced
+  extract_figures: true
+  extract_tables: true
+  extract_citations: true
+  extract_equations: false
+  max_file_size_mb: 100
+  parallel_workers: 2
+  memory_limit_mb: 1024
+  timeout_seconds: 450
+tables:
+  output_format: csv
+  confidence_threshold: 0.7
+  max_false_positives: 0.05
+  detect_headers: true
+  merge_cells: true
+  min_rows: 2
+  min_columns: 2
+figures:
+  output_format: png
+  min_width: 100
+  min_height: 100
+  extract_captions: true
+  analyze_content: false
+  quality: 95
+logging:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  max_file_size_mb: 10
+  backup_count: 5
+api:
+  enable_arxiv: true
+  enable_crossref: true
+  rate_limit_requests_per_second: 1.0
+  timeout_seconds: 30
+  max_retries: 3
+  cache_enabled: true
+  cache_ttl_hours: 24
+plugins:
+  enabled: true
+  plugin_directories:
+  - /Users/brilliantaksan/.paper2data/plugins
+  auto_load: true
+  enabled_plugins: []
+  disabled_plugins: []
+version: 1.0.0
+profile: default
+_metadata:
+  generated_by: Paper2Data Smart Defaults
+  use_case: balanced
+  system_info:
+    cpu_cores: 8
+    memory_gb: 8.0
+    storage_gb: 6
+    platform: Darwin
+    has_gpu: false
+  version: 1.0.0

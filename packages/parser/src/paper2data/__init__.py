@@ -11,6 +11,32 @@ __email__ = "team@paper2data.dev"
 
 # Main API exports
 from .ingest import PDFIngestor, URLIngestor, DOIIngestor, create_ingestor
+from .config_manager import (
+    ConfigManager,
+    ConfigurationStatus,
+    load_config,
+    save_config,
+    create_config_interactive,
+    get_configuration_status,
+    fix_configuration,
+    get_config_help,
+    config_manager
+)
+from .config_schema import Paper2DataConfig, CONFIG_PROFILES
+from .smart_defaults import (
+    get_smart_config,
+    get_system_info,
+    create_config_file,
+    get_config_profiles,
+    smart_defaults
+)
+from .config_validator import (
+    validate_config,
+    validate_config_file,
+    get_validation_report,
+    fix_config_issues,
+    config_validator
+)
 from .extractor import (
     ContentExtractor, 
     SectionExtractor, 
@@ -117,6 +143,32 @@ from .output_formatters import (
     export_all_formats,
     default_config
 )
+from .plugin_manager import (
+    PluginManager,
+    BasePlugin,
+    PluginMetadata,
+    PluginInfo,
+    PluginStatus,
+    HookPriority,
+    HookRegistration,
+    plugin_hook,
+    get_plugin_manager,
+    initialize_plugin_system
+)
+from .plugin_hooks import (
+    HookCategory,
+    HookDefinition,
+    execute_hook,
+    execute_hook_until_success,
+    register_hook,
+    get_hook_definition,
+    list_hooks_by_category,
+    get_all_hook_names,
+    validate_hook_name,
+    get_hook_documentation,
+    ALL_HOOKS,
+    HOOK_CATEGORIES
+)
 from .utils import (
     setup_logging, 
     get_logger,
@@ -140,6 +192,8 @@ from .utils import (
     ValidationError,
     ConfigurationError
 )
+# Help system
+from .help_system import help_system
 
 __all__ = [
     # Ingestors
@@ -207,7 +261,7 @@ __all__ = [
     "get_advanced_figure_processor",
     "process_advanced_figures",
     
-    # Enhanced Metadata Extraction (Stage 5)
+    # Metadata Extraction (Stage 5)
     "MetadataExtractor",
     "EnhancedMetadata",
     "Author",
@@ -232,7 +286,7 @@ __all__ = [
     "analyze_citation_networks",
     "citation_network_analyzer",
     
-    # Output Formatters (Stage 5)
+    # Output Formatting (Stage 5)
     "OutputFormat",
     "FormatConfig",
     "BaseFormatter",
@@ -254,15 +308,67 @@ __all__ = [
     "export_all_formats",
     "default_config",
     
+    # Plugin System (Stage 5)
+    "PluginManager",
+    "BasePlugin",
+    "PluginMetadata",
+    "PluginInfo",
+    "PluginStatus",
+    "HookPriority",
+    "HookRegistration",
+    "plugin_hook",
+    "get_plugin_manager",
+    "initialize_plugin_system",
+    
+    # Plugin Hooks (Stage 5)
+    "HookCategory",
+    "HookDefinition",
+    "execute_hook",
+    "execute_hook_until_success",
+    "register_hook",
+    "get_hook_definition",
+    "list_hooks_by_category",
+    "get_all_hook_names",
+    "validate_hook_name",
+    "get_hook_documentation",
+    "ALL_HOOKS",
+    "HOOK_CATEGORIES",
+    
+    # Configuration System (Stage 5)
+    "ConfigManager",
+    "ConfigurationStatus",
+    "load_config",
+    "save_config",
+    "create_config_interactive",
+    "get_configuration_status",
+    "fix_configuration",
+    "get_config_help",
+    "config_manager",
+    "Paper2DataConfig",
+    "CONFIG_PROFILES",
+    "get_smart_config",
+    "get_system_info",
+    "create_config_file",
+    "get_config_profiles",
+    "smart_defaults",
+    "validate_config",
+    "validate_config_file",
+    "get_validation_report",
+    "fix_config_issues",
+    "config_validator",
+    
+    # Help System (Stage 5 - Task 8)
+    "help_system",
+    
     # Utilities
     "setup_logging",
-    "get_logger", 
+    "get_logger",
     "validate_input",
     "format_output",
     "clean_text",
     "load_config",
     "save_json",
-    "ensure_directory", 
+    "ensure_directory",
     "create_output_structure",
     "progress_callback",
     "suppress_stderr",
@@ -273,11 +379,9 @@ __all__ = [
     "validate_doi",
     "extract_identifiers_from_text",
     "validate_url_accessibility",
-    
-    # Exceptions
     "ProcessingError",
     "ValidationError",
-    "ConfigurationError",
+    "ConfigurationError"
 ]
 
 # Package metadata

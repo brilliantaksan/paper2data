@@ -5,11 +5,23 @@ Handles text extraction, section detection, figure/table extraction,
 and output formatting.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 import re
-import fitz  # PyMuPDF
+try:
+    import fitz  # PyMuPDF
+    FITZ_AVAILABLE = True
+    FitzDocument = fitz.Document
+    FitzPixmap = fitz.Pixmap
+except ImportError:
+    # Handle case where PyMuPDF is not installed
+    fitz = None
+    FITZ_AVAILABLE = False
+    FitzDocument = Any
+    FitzPixmap = Any
 from .utils import get_logger, ProcessingError, clean_text, progress_callback, suppress_stderr
 from .table_processor import enhance_table_with_csv
+from .plugin_manager import get_plugin_manager, initialize_plugin_system
+from .plugin_hooks import execute_hook, execute_hook_until_success
 
 logger = get_logger(__name__)
 
@@ -19,18 +31,24 @@ class BaseExtractor:
     def __init__(self, pdf_content: bytes) -> None:
         self.pdf_content = pdf_content
         self.extracted_data: Dict[str, Any] = {}
-        self.doc: Optional[fitz.Document] = None
+        self.doc: Optional[Any] = None
 
     def extract(self) -> Dict[str, Any]:
         """Extract content from PDF."""
         raise NotImplementedError("Subclasses must implement extract method")
 
-    def _open_document(self) -> fitz.Document:
+    def _open_document(self) -> Any:
         """Open PDF document from bytes."""
+        if not FITZ_AVAILABLE or fitz is None:
+            raise ProcessingError("PyMuPDF (fitz) is not installed. Please install it with: pip install PyMuPDF")
+        
         if self.doc is None:
             try:
                 self.doc = fitz.open(stream=self.pdf_content, filetype="pdf")
-                logger.debug(f"Opened PDF document: {self.doc.page_count} pages")
+                if self.doc is not None:
+                    logger.debug(f"Opened PDF document: {self.doc.page_count} pages")
+                else:
+                    raise ProcessingError("Failed to open PDF document: Document is None")
             except Exception as e:
                 raise ProcessingError(f"Failed to open PDF document: {str(e)}")
         return self.doc
@@ -56,6 +74,15 @@ class BaseExtractor:
         Returns:
             Extracted text string
         """
+        if not FITZ_AVAILABLE or fitz is None or page is None:
+            page_num_str = "unknown"
+            if page is not None and hasattr(page, 'number'):
+                try:
+                    page_num_str = str(page.number + 1)
+                except (TypeError, AttributeError):
+                    page_num_str = "unknown"
+            return f"Page {page_num_str}: Text extraction unavailable (PyMuPDF not installed or page is None)"
+        
         with suppress_stderr():
             # Method 1: Standard text extraction
             text = page.get_text()
@@ -117,15 +144,25 @@ class BaseExtractor:
                 pass
 
             # Last resort: Generate meaningful fallback content
-            logger.warning(f"Standard text extraction failed for page {page.number + 1}, may require OCR")
+            page_num: Union[int, str] = "unknown"
+            try:
+                if hasattr(page, 'number') and isinstance(page.number, int):
+                    page_num = page.number + 1
+            except (TypeError, AttributeError):
+                page_num = "unknown"
+            
+            logger.warning(f"Standard text extraction failed for page {page_num}, may require OCR")
 
             # Try to extract at least basic structure information
             page_info = []
-            page_info.append(f"Page {page.number + 1}")
+            page_info.append(f"Page {page_num}")
 
             # Get page dimensions and basic info
-            rect = page.rect
-            page_info.append(f"Dimensions: {rect.width:.0f}x{rect.height:.0f} pts")
+            try:
+                rect = page.rect
+                page_info.append(f"Dimensions: {rect.width:.0f}x{rect.height:.0f} pts")
+            except Exception:
+                page_info.append("Dimensions: Unable to determine")
 
             # Count images and other elements to give some structure info
             try:
@@ -141,7 +178,7 @@ class BaseExtractor:
 
             # For section detection, add some common academic paper markers
             # Use special markers that won't be collapsed by clean_text()
-            if page.number + 1 == 1:
+            if page_num == 1:
                 page_info.append("")  # Empty line for separation
                 page_info.append("===SECTION_BREAK===")
                 page_info.append("# Abstract")
@@ -149,7 +186,7 @@ class BaseExtractor:
                 page_info.append("===SECTION_BREAK===")
                 page_info.append("# Introduction")
                 page_info.append("[Text extraction failed - may contain introduction]")
-            elif page.number + 1 <= 3:
+            elif isinstance(page_num, int) and page_num <= 3:
                 page_info.append("")  # Empty line for separation
                 page_info.append("===SECTION_BREAK===")
                 page_info.append("# Introduction")
@@ -157,7 +194,7 @@ class BaseExtractor:
             else:
                 page_info.append("")  # Empty line for separation
                 page_info.append("===SECTION_BREAK===")
-                page_info.append(f"# Content Page {page.number + 1}")
+                page_info.append(f"# Content Page {page_num}")
                 page_info.append(f"[Text extraction failed - may contain results, discussion, or references]")
 
             return "\n".join(page_info)
@@ -558,6 +595,16 @@ class FigureExtractor(BaseExtractor):
             Dictionary containing figure information and data
         """
         logger.info("Starting figure extraction")
+        
+        if not FITZ_AVAILABLE or fitz is None:
+            logger.warning("PyMuPDF not available - figure extraction skipped")
+            return {
+                "figures": [],
+                "figure_count": 0,
+                "total_size_bytes": 0,
+                "error": "PyMuPDF not available"
+            }
+        
         doc = self._open_document()
 
         try:
@@ -1606,7 +1653,7 @@ def extract_all_content(pdf_content: bytes, output_format: Optional[str] = None,
     """
     from datetime import datetime
 
-    logger.info("Starting comprehensive content extraction")
+    logger.info("Starting comprehensive content extraction with plugin support")
 
     results = {
         "extraction_timestamp": datetime.now().isoformat(),
@@ -1621,21 +1668,143 @@ def extract_all_content(pdf_content: bytes, output_format: Optional[str] = None,
     }
 
     try:
-        # Content extraction
+        # Initialize plugin system
+        plugin_manager = get_plugin_manager()
+        
+        # Pre-process document hook
+        temp_file_path = None
+        try:
+            import tempfile
+            import os
+            
+            # Create temporary file for plugin access
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                tmp_file.write(pdf_content)
+                temp_file_path = tmp_file.name
+            
+            # Execute pre-processing hooks
+            preprocessed_path = execute_hook_until_success(
+                "pre_process_document", 
+                temp_file_path, 
+                {"output_format": output_format, "output_path": output_path}
+            )
+            
+            if preprocessed_path:
+                logger.info(f"Document preprocessed by plugin: {preprocessed_path}")
+                # Read the preprocessed PDF
+                with open(preprocessed_path, 'rb') as f:
+                    pdf_content = f.read()
+                
+                # Clean up preprocessed file if it's different from original
+                if preprocessed_path != temp_file_path and os.path.exists(preprocessed_path):
+                    os.unlink(preprocessed_path)
+            
+        except Exception as e:
+            logger.warning(f"Plugin pre-processing failed: {e}")
+        
+        # Document validation hook
+        try:
+            validation_results = execute_hook(
+                "validate_document",
+                temp_file_path or "",
+                {"format": output_format}
+            )
+            
+            # If any plugin rejects the document, skip processing
+            if validation_results and any(not result for result in validation_results if result is not None):
+                logger.warning("Document validation failed - skipping processing")
+                results["validation_status"] = "failed"
+                return results
+            
+        except Exception as e:
+            logger.warning(f"Document validation failed: {e}")
+        
+                # Content extraction with plugin enhancement
         content_extractor = ContentExtractor(pdf_content)
         results["content"] = content_extractor.extract()
+        
+        # Enhanced text extraction through plugins
+        try:
+            enhanced_text = execute_hook_until_success(
+                "extract_text",
+                temp_file_path or "",
+                -1,  # All pages
+                {"method": "enhanced"}
+            )
+            
+            if enhanced_text:
+                logger.info("Enhanced text extraction successful")
+                results["content"]["enhanced_text"] = enhanced_text
+        except Exception as e:
+            logger.warning(f"Enhanced text extraction failed: {e}")
 
-        # Section extraction
+        # Section extraction with plugin enhancement
         section_extractor = SectionExtractor(pdf_content)
         results["sections"] = section_extractor.extract()
+        
+        # Enhanced section detection through plugins
+        try:
+            enhanced_sections = execute_hook_until_success(
+                "detect_sections",
+                results["content"].get("full_text", ""),
+                results["content"].get("pages", []),
+                {"method": "enhanced"}
+            )
+            
+            if enhanced_sections:
+                logger.info("Enhanced section detection successful")
+                results["sections"]["enhanced_sections"] = enhanced_sections
+        except Exception as e:
+            logger.warning(f"Enhanced section detection failed: {e}")
 
-        # Figure extraction
+        # Figure extraction with plugin enhancement
         figure_extractor = FigureExtractor(pdf_content)
         results["figures"] = figure_extractor.extract()
+        
+        # Enhanced figure extraction through plugins
+        try:
+            if FITZ_AVAILABLE and fitz is not None:
+                doc = fitz.open(stream=pdf_content, filetype="pdf")
+                enhanced_figures = execute_hook_until_success(
+                    "extract_figures",
+                    doc,
+                    {"method": "enhanced"}
+                )
+                
+                if enhanced_figures:
+                    logger.info("Enhanced figure extraction successful")
+                    results["figures"]["enhanced_figures"] = enhanced_figures
+                    
+                doc.close()
+            else:
+                logger.warning("Enhanced figure extraction skipped - PyMuPDF not available")
+        except Exception as e:
+            logger.warning(f"Enhanced figure extraction failed: {e}")
 
-        # Table extraction
+        # Table extraction with plugin enhancement
         table_extractor = TableExtractor(pdf_content)
         results["tables"] = table_extractor.extract()
+        
+        # Enhanced table processing through plugins
+        try:
+            if FITZ_AVAILABLE and fitz is not None:
+                doc = fitz.open(stream=pdf_content, filetype="pdf")
+                enhanced_tables = execute_hook_until_success(
+                    "process_tables",
+                    doc,
+                    results["content"].get("full_text", ""),
+                    {"method": "enhanced"}
+                )
+                
+                if enhanced_tables:
+                    logger.info("Enhanced table processing successful")
+                    results["tables"]["enhanced_tables"] = enhanced_tables
+                    
+                doc.close()
+            else:
+                logger.warning("Enhanced table processing skipped - PyMuPDF not available")
+        except Exception as e:
+            logger.warning(f"Enhanced table processing failed: {e}")
 
         # Citation extraction
         citation_extractor = CitationExtractor(pdf_content)
@@ -1645,6 +1814,25 @@ def extract_all_content(pdf_content: bytes, output_format: Optional[str] = None,
         try:
             from .equation_processor import process_equations_from_pdf
             results["equations"] = process_equations_from_pdf(pdf_content)
+            
+            # Enhanced equation processing through plugins
+            try:
+                enhanced_equations = execute_hook(
+                    "process_equations",
+                    results["equations"].get("equations", []),
+                    {"method": "enhanced"}
+                )
+                
+                if enhanced_equations:
+                    logger.info("Enhanced equation processing successful")
+                    # Use the best result from plugins
+                    for enhanced_result in enhanced_equations:
+                        if enhanced_result and isinstance(enhanced_result, list):
+                            results["equations"]["enhanced_equations"] = enhanced_result
+                            break
+            except Exception as e:
+                logger.warning(f"Enhanced equation processing failed: {e}")
+                
         except ImportError:
             logger.warning("Equation processing not available")
             results["equations"] = {"total_equations": 0, "equations": [], "processing_status": "not_available"}
@@ -1660,20 +1848,44 @@ def extract_all_content(pdf_content: bytes, output_format: Optional[str] = None,
         # Enhanced metadata extraction (Stage 5 feature)
         try:
             from .metadata_extractor import extract_metadata
-            import tempfile
-            import os
             
-            # Create temporary file for metadata extraction
-            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
-                tmp_file.write(pdf_content)
-                tmp_file_path = tmp_file.name
+            # Use existing temp file or create new one
+            if not temp_file_path:
+                import tempfile
+                import os
+                
+                # Create temporary file for metadata extraction
+                with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                    tmp_file.write(pdf_content)
+                    temp_file_path = tmp_file.name
             
             try:
-                metadata = extract_metadata(tmp_file_path)
+                metadata = extract_metadata(temp_file_path)
                 results["metadata"] = metadata.to_dict()
+                
+                # Enhanced metadata processing through plugins
+                try:
+                    enhanced_metadata = execute_hook(
+                        "enhance_metadata",
+                        results["metadata"],
+                        {"method": "enhanced"}
+                    )
+                    
+                    if enhanced_metadata:
+                        logger.info("Enhanced metadata processing successful")
+                        # Use the best result from plugins
+                        for enhanced_result in enhanced_metadata:
+                            if enhanced_result and isinstance(enhanced_result, dict):
+                                results["metadata"]["enhanced_metadata"] = enhanced_result
+                                break
+                except Exception as e:
+                    logger.warning(f"Enhanced metadata processing failed: {e}")
+                    
             finally:
-                # Clean up temporary file
-                os.unlink(tmp_file_path)
+                # Clean up temporary file if we created it
+                if temp_file_path and os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
+                    
         except ImportError:
             logger.warning("Enhanced metadata extraction not available")
             results["metadata"] = {"processing_status": "not_available"}
@@ -1730,13 +1942,42 @@ def extract_all_content(pdf_content: bytes, output_format: Optional[str] = None,
         if output_format and output_path:
             try:
                 from .output_formatters import format_output
-                success = format_output(results, output_path, output_format)
-                if success:
-                    logger.info(f"Results formatted and saved to {output_path} in {output_format} format")
-                    results["output_formatted"] = {"format": output_format, "path": output_path, "success": True}
-                else:
-                    logger.warning(f"Failed to format results in {output_format} format")
-                    results["output_formatted"] = {"format": output_format, "path": output_path, "success": False}
+                
+                # Plugin-enhanced output formatting
+                try:
+                    custom_output = execute_hook_until_success(
+                        "format_output",
+                        results,
+                        output_format,
+                        {"path": output_path, "method": "enhanced"}
+                    )
+                    
+                    if custom_output:
+                        logger.info("Custom output formatting successful")
+                        # Save custom output
+                        with open(output_path, 'w', encoding='utf-8') as f:
+                            f.write(custom_output)
+                        results["output_formatted"] = {"format": output_format, "path": output_path, "success": True, "method": "plugin"}
+                    else:
+                        # Fall back to default formatting
+                        success = format_output(results, output_path, output_format)
+                        if success:
+                            logger.info(f"Results formatted and saved to {output_path} in {output_format} format")
+                            results["output_formatted"] = {"format": output_format, "path": output_path, "success": True, "method": "default"}
+                        else:
+                            logger.warning(f"Failed to format results in {output_format} format")
+                            results["output_formatted"] = {"format": output_format, "path": output_path, "success": False}
+                except Exception as e:
+                    logger.warning(f"Plugin output formatting failed: {e}")
+                    # Fall back to default formatting
+                    success = format_output(results, output_path, output_format)
+                    if success:
+                        logger.info(f"Results formatted and saved to {output_path} in {output_format} format")
+                        results["output_formatted"] = {"format": output_format, "path": output_path, "success": True, "method": "default"}
+                    else:
+                        logger.warning(f"Failed to format results in {output_format} format")
+                        results["output_formatted"] = {"format": output_format, "path": output_path, "success": False}
+                        
             except ImportError:
                 logger.warning("Output formatting not available")
                 results["output_formatted"] = {"error": "Output formatting not available"}
@@ -1744,7 +1985,53 @@ def extract_all_content(pdf_content: bytes, output_format: Optional[str] = None,
                 logger.error(f"Output formatting failed: {str(e)}")
                 results["output_formatted"] = {"error": str(e)}
 
-        logger.info("Comprehensive content extraction completed successfully")
+        # Post-processing and validation hooks
+        try:
+            # Post-process results through plugins
+            enhanced_results = execute_hook_until_success(
+                "post_process_document",
+                temp_file_path or "",
+                results,
+                {"output_format": output_format, "output_path": output_path}
+            )
+            
+            if enhanced_results:
+                logger.info("Post-processing enhancement successful")
+                results["post_processed"] = True
+                # Merge enhanced results
+                if isinstance(enhanced_results, dict):
+                    results.update(enhanced_results)
+            
+            # Validate output quality
+            if output_path:
+                try:
+                    validation_results = execute_hook(
+                        "validate_output",
+                        output_path,
+                        results,
+                        {"format": output_format}
+                    )
+                    
+                    if validation_results:
+                        logger.info("Output validation completed")
+                        results["validation_results"] = [
+                            result for result in validation_results 
+                            if result is not None
+                        ]
+                except Exception as e:
+                    logger.warning(f"Output validation failed: {e}")
+                    
+        except Exception as e:
+            logger.warning(f"Post-processing failed: {e}")
+        
+        # Clean up temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except Exception as e:
+                logger.warning(f"Failed to clean up temporary file: {e}")
+
+        logger.info("Comprehensive content extraction completed successfully with plugin support")
         return results
 
     except Exception as e:

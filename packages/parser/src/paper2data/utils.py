@@ -260,6 +260,9 @@ def save_json(data: Dict[str, Any], filepath: Path) -> None:
 def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     """Load configuration from YAML file.
     
+    DEPRECATED: Use config_manager.load_config() for new code.
+    This function is maintained for backward compatibility.
+    
     Args:
         config_path: Path to configuration file. If None, uses default locations.
         
@@ -269,6 +272,29 @@ def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     Raises:
         ConfigurationError: If configuration cannot be loaded or is invalid
     """
+    logger = get_logger()
+    
+    try:
+        # Use the new configuration system
+        from .config_manager import load_config as new_load_config
+        config = new_load_config(config_path=config_path)
+        
+        # Convert to dictionary for backward compatibility
+        config_dict = config.dict(exclude_none=True)
+        
+        logger.info("Configuration loaded successfully using new system")
+        return config_dict
+        
+    except Exception as e:
+        logger.warning(f"New configuration system failed: {e}")
+        logger.info("Falling back to legacy configuration loading")
+        
+        # Fallback to old system
+        return _load_config_legacy(config_path)
+
+
+def _load_config_legacy(config_path: Optional[Path] = None) -> Dict[str, Any]:
+    """Legacy configuration loading (fallback)."""
     logger = get_logger()
     
     # Default configuration

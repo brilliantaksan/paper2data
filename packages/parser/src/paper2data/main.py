@@ -25,6 +25,7 @@ from . import (
     ProcessingError,
     ConfigurationError
 )
+from .help_system import help_system
 
 
 def setup_argument_parser() -> argparse.ArgumentParser:
@@ -32,23 +33,19 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Paper2Data Parser - Extract content from academic papers",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python -m paper2data.parser convert paper.pdf
-  python -m paper2data.parser convert https://arxiv.org/abs/2301.00001
-  python -m paper2data.parser convert 10.1038/nature12373 --output ./output
-        """
+        epilog=help_system.show_section("overview")
     )
     
     parser.add_argument(
         "command",
-        choices=["convert", "validate", "info"],
+        choices=["convert", "validate", "info", "config", "help"],
         help="Command to execute"
     )
     
     parser.add_argument(
         "input",
-        help="Input source: PDF file path, arXiv URL, or DOI"
+        nargs="?",
+        help="Input source: PDF file path, arXiv URL, or DOI (not required for config/help commands)"
     )
     
     parser.add_argument(
@@ -111,6 +108,75 @@ Examples:
         "--json-output",
         action="store_true",
         help="Output results as JSON to stdout (for CLI integration)"
+    )
+    
+    # Configuration-specific arguments
+    parser.add_argument(
+        "--config-action",
+        choices=["create", "validate", "fix", "status", "help"],
+        default="help",
+        help="Configuration action to perform (default: help)"
+    )
+    
+    parser.add_argument(
+        "--profile",
+        choices=["fast", "balanced", "thorough", "research"],
+        help="Configuration profile to use"
+    )
+    
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Interactive configuration setup"
+    )
+    
+    # Help-specific arguments
+    parser.add_argument(
+        "--help-section",
+        choices=["overview", "commands", "examples", "configuration", "troubleshooting", "advanced"],
+        help="Show specific help section"
+    )
+    
+    parser.add_argument(
+        "--help-command",
+        choices=["convert", "validate", "info", "config"],
+        help="Show detailed help for specific command"
+    )
+    
+    parser.add_argument(
+        "--system-info",
+        action="store_true",
+        help="Show system information"
+    )
+    
+    parser.add_argument(
+        "--contextual-help",
+        action="store_true",
+        help="Show contextual help based on current system state"
+    )
+    
+    parser.add_argument(
+        "--error-help",
+        type=str,
+        help="Get help for a specific error message"
+    )
+    
+    parser.add_argument(
+        "--usage-recommendations",
+        action="store_true",
+        help="Get usage recommendations based on system capabilities"
+    )
+    
+    parser.add_argument(
+        "--config-help",
+        action="store_true",
+        help="Show detailed configuration help with current system context"
+    )
+    
+    parser.add_argument(
+        "--performance-help",
+        action="store_true",
+        help="Show performance tuning help based on system capabilities"
     )
     
     return parser
@@ -337,12 +403,288 @@ Processed on: {extraction_results.get('extraction_timestamp', 'Unknown')}
         }
 
 
+def config_command(args: argparse.Namespace) -> Dict[str, Any]:
+    """Handle configuration commands."""
+    logger = get_logger()
+    
+    try:
+        from .config_manager import (
+            get_configuration_status,
+            create_config_interactive,
+            fix_configuration,
+            get_config_help
+        )
+        from .config_validator import get_validation_report
+        from .smart_defaults import get_config_profiles
+        
+        action = args.config_action
+        
+        if action == "help":
+            help_text = get_config_help()
+            print(help_text)
+            return {
+                "success": True,
+                "action": "help",
+                "message": "Configuration help displayed"
+            }
+        
+        elif action == "status":
+            status = get_configuration_status()
+            print("\n📊 Configuration Status")
+            print("=" * 25)
+            print(f"Has config file: {'✅' if status.has_config else '❌'}")
+            if status.config_path:
+                print(f"Config path: {status.config_path}")
+            print(f"Configuration valid: {'✅' if status.is_valid else '❌'}")
+            print(f"Profile: {status.profile or 'default'}")
+            print(f"System optimal: {'✅' if status.system_optimal else '⚠️'}")
+            
+            if status.errors:
+                print("\nErrors:")
+                for error in status.errors:
+                    print(f"  ❌ {error}")
+            
+            if status.warnings:
+                print("\nWarnings:")
+                for warning in status.warnings:
+                    print(f"  ⚠️  {warning}")
+            
+            return {
+                "success": True,
+                "action": "status",
+                "status": status.__dict__
+            }
+        
+        elif action == "validate":
+            config_path = args.config or None
+            if config_path:
+                report = get_validation_report(config_path)
+            else:
+                status = get_configuration_status()
+                if status.config_path:
+                    report = get_validation_report(status.config_path)
+                else:
+                    report = "No configuration file found to validate"
+            
+            print(report)
+            return {
+                "success": True,
+                "action": "validate",
+                "message": "Validation report displayed"
+            }
+        
+        elif action == "fix":
+            config_path = args.config or None
+            success = fix_configuration(config_path)
+            
+            if success:
+                print("✅ Configuration fixed successfully")
+                return {
+                    "success": True,
+                    "action": "fix",
+                    "message": "Configuration fixed"
+                }
+            else:
+                print("❌ Could not fix configuration automatically")
+                return {
+                    "success": False,
+                    "action": "fix",
+                    "message": "Configuration could not be fixed"
+                }
+        
+        elif action == "create":
+            if args.interactive:
+                config_path = create_config_interactive(args.config)
+                return {
+                    "success": True,
+                    "action": "create",
+                    "config_path": str(config_path),
+                    "message": "Configuration created interactively"
+                }
+            else:
+                # Non-interactive creation
+                profile = args.profile or "balanced"
+                config_path = Path(args.config) if args.config else Path.cwd() / "paper2data.yml"
+                
+                from .smart_defaults import create_config_file
+                create_config_file(config_path, use_case=profile)
+                
+                print(f"✅ Configuration created: {config_path}")
+                print(f"📋 Profile: {profile}")
+                return {
+                    "success": True,
+                    "action": "create",
+                    "config_path": str(config_path),
+                    "profile": profile,
+                    "message": "Configuration created"
+                }
+        
+        else:
+            return {
+                "success": False,
+                "action": action,
+                "message": f"Unknown configuration action: {action}"
+            }
+    
+    except Exception as e:
+        logger.error(f"Configuration command failed: {str(e)}")
+        return {
+            "success": False,
+            "action": args.config_action,
+            "error": str(e),
+            "message": "Configuration command failed"
+        }
+
+
+def help_command(args: argparse.Namespace) -> Dict[str, Any]:
+    """Handle help command with comprehensive help system."""
+    try:
+        if args.help_section:
+            # Show specific help section
+            help_text = help_system.show_section(args.help_section)
+            print(help_text)
+            return {
+                "success": True,
+                "action": "help",
+                "section": args.help_section,
+                "message": f"Help section '{args.help_section}' displayed"
+            }
+        
+        elif args.help_command:
+            # Show help for specific command
+            help_text = help_system.show_command_help(args.help_command)
+            print(help_text)
+            return {
+                "success": True,
+                "action": "help",
+                "command": args.help_command,
+                "message": f"Help for '{args.help_command}' command displayed"
+            }
+        
+        elif args.system_info:
+            # Show system information
+            system_info = help_system.get_system_info()
+            print(system_info)
+            return {
+                "success": True,
+                "action": "help",
+                "info": "system",
+                "message": "System information displayed"
+            }
+        
+        elif args.contextual_help:
+            # Show contextual help based on current state
+            contextual_help = help_system.get_contextual_help()
+            print(contextual_help)
+            return {
+                "success": True,
+                "action": "help",
+                "type": "contextual",
+                "message": "Contextual help displayed"
+            }
+        
+        elif args.error_help:
+            # Show help for specific error
+            error_help = help_system.get_error_specific_help(args.error_help)
+            print(error_help)
+            return {
+                "success": True,
+                "action": "help",
+                "type": "error",
+                "error": args.error_help,
+                "message": "Error-specific help displayed"
+            }
+        
+        elif args.usage_recommendations:
+            # Show usage recommendations
+            recommendations = help_system.get_usage_recommendations()
+            print(recommendations)
+            return {
+                "success": True,
+                "action": "help",
+                "type": "recommendations",
+                "message": "Usage recommendations displayed"
+            }
+        
+        elif args.config_help:
+            # Show detailed configuration help
+            config_help = help_system.get_configuration_detailed_help()
+            print(config_help)
+            return {
+                "success": True,
+                "action": "help",
+                "type": "config",
+                "message": "Configuration help displayed"
+            }
+        
+        elif args.performance_help:
+            # Show performance tuning help
+            performance_help = help_system.get_performance_tuning_help()
+            print(performance_help)
+            return {
+                "success": True,
+                "action": "help",
+                "type": "performance",
+                "message": "Performance tuning help displayed"
+            }
+        
+        else:
+            # Show comprehensive help
+            help_text = help_system.show_all_help()
+            print(help_text)
+            return {
+                "success": True,
+                "action": "help",
+                "message": "Comprehensive help displayed"
+            }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "action": "help",
+            "error": str(e),
+            "message": "Help command failed"
+        }
+
+
 def main() -> int:
     """Main entry point."""
     parser = setup_argument_parser()
     args = parser.parse_args()
     
     try:
+        # Handle help command early
+        if args.command == "help":
+            # Set up minimal logging for help command
+            setup_logging(level="ERROR")  # Suppress most logs for help
+            result = help_command(args)
+            
+            if args.json_output:
+                print(json.dumps(result, indent=2))
+            
+            return 0 if result.get("success", False) else 1
+        
+        # Handle config command early (doesn't need input validation)
+        if args.command == "config":
+            # Set up basic logging for config command
+            setup_logging(level=args.log_level or "INFO", log_file=args.log_file)
+            logger = get_logger()
+            logger.info(f"Starting Paper2Data parser - Command: {args.command}")
+            
+            result = config_command(args)
+            
+            # Output results
+            if args.json_output:
+                print(json.dumps(result, indent=2))
+            
+            return 0 if result.get("success", False) else 1
+        
+        # For other commands, validate input is provided
+        if not args.input:
+            print("❌ Input is required for this command")
+            print("Use 'paper2data help' for usage examples")
+            return 1
+        
         # Load configuration
         config = load_config(args.config)
         
@@ -400,6 +742,7 @@ def main() -> int:
                 print("❌ Operation failed")
                 if "error" in result:
                     print(f"Error: {result['error']}")
+                print("Use 'paper2data help' for usage examples")
         
         return 0 if result.get("success", result.get("valid", False)) else 1
         
@@ -408,6 +751,7 @@ def main() -> int:
             print(json.dumps({"error": str(e), "success": False}, indent=2))
         else:
             print(f"❌ Fatal error: {str(e)}")
+            print("Use 'paper2data help troubleshooting' for common solutions")
         return 1
 
 
