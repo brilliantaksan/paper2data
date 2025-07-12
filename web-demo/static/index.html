@@ -369,7 +369,48 @@
                     throw new Error(result.detail || 'Processing failed');
                 }
             } catch (error) {
-                alert(`Error: ${error.message}`);
+                console.error('Processing error:', error);
+                
+                let errorMessage = 'Processing failed';
+                
+                // Try to parse error details if it's a JSON response
+                try {
+                    const errorData = JSON.parse(error.message);
+                    if (errorData.detail) {
+                        if (typeof errorData.detail === 'object') {
+                            errorMessage = errorData.detail.message || errorData.detail.error || 'Processing failed';
+                            if (errorData.detail.support) {
+                                errorMessage += `\n\n${errorData.detail.support}`;
+                            }
+                        } else {
+                            errorMessage = errorData.detail;
+                        }
+                    }
+                } catch (parseError) {
+                    // If not JSON, use the raw error message
+                    errorMessage = error.message || 'Processing failed';
+                }
+                
+                // Show a more user-friendly error dialog
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                errorDiv.innerHTML = `
+                    <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+                            <h3 class="text-lg font-bold text-gray-800">Processing Error</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">${errorMessage}</p>
+                        <div class="text-right">
+                            <button onclick="this.closest('.fixed').remove()" 
+                                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(errorDiv);
+                
                 document.getElementById('progressSection').classList.add('hidden');
                 document.getElementById('submitBtn').disabled = false;
             }

@@ -22,8 +22,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import aiofiles
 
 # Import Paper2Data functionality
+PAPER2DATA_AVAILABLE = False
+paper2data = None
+
+# Try multiple import strategies
+import_attempts = []
+
 try:
-    # Try importing the locally installed package first
+    # Strategy 1: Try importing the locally installed package first
     import paper2data
     from paper2data import (
         create_ingestor,
@@ -37,12 +43,19 @@ try:
         get_logger
     )
     PAPER2DATA_AVAILABLE = True
+    import_attempts.append("✅ Paper2Data library loaded successfully (installed package)")
     print("✅ Paper2Data library loaded successfully (installed package)")
 except ImportError as e:
+    import_attempts.append(f"❌ Failed to import installed Paper2Data: {e}")
     print(f"❌ Failed to import installed Paper2Data: {e}")
-    # Try importing from local copy
+    
+    # Strategy 2: Try importing from local copy
     try:
-        sys.path.insert(0, str(Path(__file__).parent / "paper2data_local"))
+        local_path = str(Path(__file__).parent / "paper2data_local")
+        sys.path.insert(0, local_path)
+        print(f"🔍 Trying local import from: {local_path}")
+        
+        # Import the local package
         import paper2data_local as paper2data
         from paper2data_local import (
             create_ingestor,
@@ -56,12 +69,18 @@ except ImportError as e:
             get_logger
         )
         PAPER2DATA_AVAILABLE = True
+        import_attempts.append("✅ Paper2Data library loaded successfully (local copy)")
         print("✅ Paper2Data library loaded successfully (local copy)")
     except ImportError as e2:
+        import_attempts.append(f"❌ Failed to import local Paper2Data: {e2}")
         print(f"❌ Failed to import local Paper2Data: {e2}")
-        # Try development path as fallback
+        
+        # Strategy 3: Try development path as fallback
         try:
-            sys.path.insert(0, str(Path(__file__).parent.parent / "packages" / "parser" / "src"))
+            dev_path = str(Path(__file__).parent.parent / "packages" / "parser" / "src")
+            sys.path.insert(0, dev_path)
+            print(f"🔍 Trying development import from: {dev_path}")
+            
             import paper2data
             from paper2data import (
                 create_ingestor,
@@ -75,10 +94,18 @@ except ImportError as e:
                 get_logger
             )
             PAPER2DATA_AVAILABLE = True
+            import_attempts.append("✅ Paper2Data library loaded successfully (development mode)")
             print("✅ Paper2Data library loaded successfully (development mode)")
         except ImportError as e3:
+            import_attempts.append(f"❌ Failed to import Paper2Data in dev mode: {e3}")
             print(f"❌ Failed to import Paper2Data in dev mode: {e3}")
             PAPER2DATA_AVAILABLE = False
+
+# Print all import attempts for debugging
+print(f"📋 Import attempts summary:")
+for attempt in import_attempts:
+    print(f"  {attempt}")
+print(f"🏁 Final status: PAPER2DATA_AVAILABLE = {PAPER2DATA_AVAILABLE}")
 
 app = FastAPI(
     title="Paper2Data Web Demo - Full Version",
@@ -125,9 +152,35 @@ async def process_paper(
     """Process a paper using full Paper2Data functionality"""
     
     if not PAPER2DATA_AVAILABLE:
+        # Provide detailed debugging information
+        error_details = {
+            "error": "Paper2Data library not available",
+            "import_attempts": import_attempts,
+            "debugging_info": {
+                "python_path": sys.path[:5],
+                "current_directory": str(Path.cwd()),
+                "paper2data_local_exists": (Path(__file__).parent / "paper2data_local").exists(),
+                "paper2data_local_files": list((Path(__file__).parent / "paper2data_local").iterdir()) if (Path(__file__).parent / "paper2data_local").exists() else []
+            },
+            "suggested_solutions": [
+                "Check if all required dependencies are installed",
+                "Verify the paper2data_local directory is present",
+                "Check the application logs for import errors",
+                "Try redeploying the application"
+            ]
+        }
+        
+        # Log the error for debugging
+        logger.error(f"Paper2Data not available. Details: {error_details}")
+        
         raise HTTPException(
-            status_code=500, 
-            detail="Paper2Data library not available. Please install the complete package."
+            status_code=503,  # Service Unavailable
+            detail={
+                "message": "Paper2Data processing is temporarily unavailable",
+                "error": "Library import failed",
+                "import_attempts": import_attempts,
+                "support": "Please try again later or contact support if the issue persists"
+            }
         )
     
     if not any([file, arxiv_url, doi]):
@@ -567,14 +620,19 @@ async def cleanup_session(session_id: str):
 @app.get("/health")
 async def health_check():
     """Health check endpoint for deployment platforms"""
-    return {
+    health_info = {
         "status": "healthy",
         "service": "paper2data-web-demo-full",
         "version": "1.1.0",
         "paper2data_available": PAPER2DATA_AVAILABLE,
-        "paper2data_version": paper2data.__version__ if PAPER2DATA_AVAILABLE else None,
-        "timestamp": datetime.now().isoformat()
+        "paper2data_version": paper2data.__version__ if PAPER2DATA_AVAILABLE and paper2data else None,
+        "timestamp": datetime.now().isoformat(),
+        "import_attempts": import_attempts if 'import_attempts' in globals() else [],
+        "python_path": sys.path[:3],  # Show first 3 paths for debugging
+        "current_directory": str(Path.cwd()),
+        "paper2data_local_exists": (Path(__file__).parent / "paper2data_local").exists()
     }
+    return health_info
 
 @app.get("/api/info")
 async def api_info():
