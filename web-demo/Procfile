@@ -1,1 +1,1 @@
-web: python3 main_simple.py
+web: uvicorn main_full_working:app --host 0.0.0.0 --port $PORT
