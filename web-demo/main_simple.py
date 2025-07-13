@@ -924,3 +924,6 @@ async def deployment_status():
     """
     
     return HTMLResponse(content=html_content)
+
+# Deployment timestamp: 2025-07-13 12:26 JST - Force Railway rebuild
+# This comment ensures Railway detects the latest code changes
